@@ -63,7 +63,7 @@ export function Toaster() {
   return (
     <ToastProvider>
       {toastList.map(({ id, title, description, action, ...props }) => (
-        <Toast key={id} {...props}>
+        <Toast key={id} {...props} variant={props.variant as "default" | "destructive" | undefined}>
           <div className="grid gap-1">
             {title && <ToastTitle>{title}</ToastTitle>}
             {description && (
@@ -71,7 +71,7 @@ export function Toaster() {
             )}
           </div>
           {action}
-          <ToastClose onClick={() => removeToast(id)} />
+          <ToastClose onClick={() => removeToast(id!)} />
         </Toast>
       ))}
       <ToastViewport />

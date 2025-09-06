@@ -1,123 +1,123 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { 
-  ArrowLeft, 
-  Trophy, 
-  FileText, 
-  Edit3, 
-  Award,
-  Calendar,
-  MapPin,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  LogOut,
-  X,
-  Star
-} from "lucide-react";
+import { ArrowLeft, Trophy, FileText, Edit3, Award, Calendar, MapPin, CheckCircle, Clock, AlertTriangle, X, Star, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
-import { Footer } from "@/components/Footer";
+import { useUser as useDbUser } from "@/hooks/use-user";
+import { Report } from "@/lib/supabase";
+import { StatusBadge } from "@/components/ui/status-badge";
 
-const Profile = () => {
+// Wrapper component to handle Clerk availability
+const ProfileWrapper = () => {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const isClerkAvailable = publishableKey && publishableKey !== 'pk_test_placeholder';
+
+  if (!isClerkAvailable) {
+    // During build time, render a simple version
+    return (
+      <div className="min-h-screen gradient-bg relative overflow-hidden">
+        <div className="floating-blob"></div>
+        <div className="floating-blob"></div>
+        <div className="floating-blob"></div>
+        <main className="relative z-10 container mx-auto px-6 py-8">
+          <h1 className="text-3xl font-bold hero-text mb-8">My Profile</h1>
+          <p className="text-white/80">Loading...</p>
+        </main>
+      </div>
+    );
+  }
+
+  return <ProfileContent />;
+};
+
+const ProfileContent = () => {
   const router = useRouter();
   const { signOut } = useClerk();
-  const { user, isLoaded } = useUser();
+  const { user: clerkUser, isLoaded } = useUser();
+  const { user: dbUser, loading: userLoading } = useDbUser();
+  const [reports, setReports] = useState<Report[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (dbUser) {
+      fetchUserReports();
+    }
+  }, [dbUser]);
+
+  const fetchUserReports = async () => {
+    try {
+      setReportsLoading(true);
+      const response = await fetch('/api/reports');
+      if (!response.ok) throw new Error('Failed to fetch reports');
+      
+      const data = await response.json();
+      // Filter to only show user's own reports
+      const userReports = data.reports?.filter((report: Report) => 
+        report.user?.clerk_id === clerkUser?.id
+      ) || [];
+      setReports(userReports);
+    } catch (err) {
+      console.error('Error fetching user reports:', err);
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
   const handleSignOut = () => {
-    // Sign out using Clerk
     signOut(() => router.push('/'));
   };
 
-  // Show loading state while user data is being fetched
-  if (!isLoaded) {
+  // Show loading state
+  if (!isLoaded || userLoading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Loading...</h1>
-          <p className="text-white/80">Please wait while we load your profile</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-white/80">Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  // Show sign-in prompt if user is not authenticated
-  if (!user) {
+  // Show sign-in prompt if not authenticated
+  if (!clerkUser || !dbUser) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Please Sign In</h1>
-          <p className="text-white/80 mb-6">You need to be signed in to view your profile</p>
-          <Button
-            onClick={() => router.push('/sign-in')}
-            className="bg-gradient-primary hover:opacity-90 text-primary-foreground"
-          >
-            Sign In
-          </Button>
-        </div>
+        <Card className="glass-effect max-w-md mx-4">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-4">Authentication Required</h2>
+            <p className="text-white/80 mb-6">Please sign in to view your profile.</p>
+            <Button onClick={() => router.push('/sign-in')} className="w-full">
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   const userStats = {
-    honorPoints: 450,
-    totalReports: 12,
-    resolvedReports: 8,
-    pendingReports: 3,
-    rejectedReports: 1,
-    communityRank: 23,
-    joinDate: "March 2024"
+    honorPoints: dbUser.honor_score_points,
+    totalReports: reports.length,
+    resolvedReports: reports.filter(r => r.verification_status === 'verified').length,
+    pendingReports: reports.filter(r => r.verification_status === 'pending').length,
+    rejectedReports: reports.filter(r => r.verification_status === 'rejected').length,
+    communityRank: 1, // This would need to be calculated from leaderboard
+    joinDate: new Date(dbUser.created_at).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long' 
+    })
   };
 
-  const recentReports = [
-    {
-      id: 1,
-      title: "Broken Street Light on Main St",
-      status: "resolved",
-      date: "2025-09-01",
-      points: 50,
-      location: "Main Street, Downtown"
-    },
-    {
-      id: 2,
-      title: "Pothole on Park Avenue",
-      status: "pending",
-      date: "2025-08-28",
-      points: 0,
-      location: "Park Avenue, Block 5"
-    },
-    {
-      id: 3,
-      title: "Garbage Collection Issue",
-      status: "resolved",
-      date: "2025-08-25",
-      points: 75,
-      location: "Residential Area, Zone 3"
-    },
-    {
-      id: 4,
-      title: "Water Leakage in Public Park",
-      status: "pending",
-      date: "2025-08-20",
-      points: 0,
-      location: "Central Park"
-    },
-    {
-      id: 5,
-      title: "Traffic Signal Malfunction",
-      status: "resolved",
-      date: "2025-08-15",
-      points: 100,
-      location: "Market Square Intersection"
-    }
-  ];
+  const recentReports = reports.slice(0, 5);
 
   const honorPointsHistory = [
     { date: '2025-09-01', points: 50, reason: 'Street Light Report Verified', type: 'earned' },
@@ -125,14 +125,6 @@ const Profile = () => {
     { date: '2025-08-15', points: 100, reason: 'Traffic Signal Report', type: 'earned' },
     { date: '2025-08-10', points: 25, reason: 'Quick Response Bonus', type: 'earned' },
     { date: '2025-08-05', points: 60, reason: 'Community Impact Achievement', type: 'earned' },
-  ];
-
-  const allReports = [
-    { id: 1, title: 'Broken Street Light on Main St', location: 'Main Street, Downtown', date: '2025-09-01', status: 'resolved', points: 50, description: 'Street light has been flickering for weeks' },
-    { id: 2, title: 'Pothole on Park Avenue', location: 'Park Avenue, Block 5', date: '2025-08-28', status: 'pending', points: 0, description: 'Large pothole causing traffic issues' },
-    { id: 3, title: 'Garbage Collection Issue', location: 'Residential Area, Zone 3', date: '2025-08-25', status: 'resolved', points: 75, description: 'Missed garbage collection for two weeks' },
-    { id: 4, title: 'Water Leakage in Public Park', location: 'Central Park', date: '2025-08-20', status: 'pending', points: 0, description: 'Water pipe burst in the park area' },
-    { id: 5, title: 'Traffic Signal Malfunction', location: 'Market Square Intersection', date: '2025-08-15', status: 'resolved', points: 100, description: 'Traffic light stuck on red' },
   ];
 
   const userAchievements = [
@@ -145,7 +137,7 @@ const Profile = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "resolved":
+      case "verified":
         return <CheckCircle className="h-4 w-4 text-success" />;
       case "pending":
         return <Clock className="h-4 w-4 text-warning" />;
@@ -153,19 +145,6 @@ const Profile = () => {
         return <AlertTriangle className="h-4 w-4 text-destructive" />;
       default:
         return <Clock className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "resolved":
-        return "bg-gradient-to-r from-green-400 to-green-600 text-white border-green-300";
-      case "pending":
-        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-yellow-300";
-      case "rejected":
-        return "bg-gradient-to-r from-red-400 to-red-600 text-white border-red-300";
-      default:
-        return "bg-gradient-to-r from-gray-400 to-gray-600 text-white border-gray-300";
     }
   };
 
@@ -189,7 +168,7 @@ const Profile = () => {
           </Button>
           <h1 className="text-3xl font-bold hero-text">My Profile</h1>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex items-center gap-4">
           <Button
             onClick={() => router.push("/edit-profile")}
             className="bg-gradient-primary hover:opacity-90 text-primary-foreground"
@@ -200,9 +179,9 @@ const Profile = () => {
           <Button
             onClick={handleSignOut}
             variant="outline"
-            className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-400"
+            className="glass-effect hover:bg-red-500/20 border-red-400/50 text-red-400 hover:text-red-300"
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 mr-2" />
             Sign Out
           </Button>
         </div>
@@ -221,13 +200,15 @@ const Profile = () => {
             <CardHeader>
               <div className="flex items-center space-x-4">
                 <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-foreground">JD</span>
+                  <span className="text-2xl font-bold text-primary-foreground">
+                    {dbUser.full_name?.charAt(0) || 'U'}
+                  </span>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">John Doe</h2>
-                  <p className="text-white/80">john.doe@email.com</p>
+                  <h2 className="text-2xl font-bold text-foreground">{dbUser.full_name}</h2>
+                  <p className="text-white/90">{dbUser.email}</p>
                   <div className="flex items-center mt-2">
-                    <Calendar className="h-4 w-4 mr-2 text-white/60" />
+                    <Calendar className="h-4 w-4 mr-2 text-white/70" />
                     <span className="text-sm text-white/70">
                       Member since {userStats.joinDate}
                     </span>
@@ -245,7 +226,7 @@ const Profile = () => {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
-          <Card 
+          <Card
             className="glass-effect cursor-pointer hover:scale-105 transition-transform"
             onClick={() => setActiveModal('honor-points')}
           >
@@ -256,12 +237,12 @@ const Profile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-yellow">{userStats.honorPoints}</p>
-              <p className="text-sm text-white/90 font-medium">Rank #{userStats.communityRank}</p>
+              <p className="text-3xl font-bold text-primary">{userStats.honorPoints}</p>
+              <p className="text-sm text-white/90">Rank #{userStats.communityRank}</p>
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className="glass-effect cursor-pointer hover:scale-105 transition-transform"
             onClick={() => setActiveModal('total-reports')}
           >
@@ -272,12 +253,12 @@ const Profile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-blue">{userStats.totalReports}</p>
-              <p className="text-sm text-white/90 font-medium">All time submissions</p>
+              <p className="text-3xl font-bold text-secondary">{userStats.totalReports}</p>
+              <p className="text-sm text-white/90">All time submissions</p>
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className="glass-effect cursor-pointer hover:scale-105 transition-transform"
             onClick={() => setActiveModal('resolved-reports')}
           >
@@ -288,14 +269,16 @@ const Profile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-green">{userStats.resolvedReports}</p>
-              <p className="text-sm text-white/90 font-medium">
-                {Math.round((userStats.resolvedReports / userStats.totalReports) * 100)}% success rate
+              <p className="text-3xl font-bold text-success">{userStats.resolvedReports}</p>
+              <p className="text-sm text-white/90">
+                {userStats.totalReports > 0 
+                  ? Math.round((userStats.resolvedReports / userStats.totalReports) * 100)
+                  : 0}% success rate
               </p>
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className="glass-effect cursor-pointer hover:scale-105 transition-transform"
             onClick={() => setActiveModal('achievements')}
           >
@@ -306,8 +289,8 @@ const Profile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-purple">5</p>
-              <p className="text-sm text-white/90 font-medium">Badges earned</p>
+              <p className="text-3xl font-bold text-accent">{userAchievements.length}</p>
+              <p className="text-sm text-white/90">Badges earned</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -323,42 +306,59 @@ const Profile = () => {
               <CardTitle className="text-xl text-foreground">My Recent Reports</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentReports.map((report, index) => (
-                  <motion.div
-                    key={report.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        {getStatusIcon(report.status)}
-                        <h3 className="font-semibold text-foreground">{report.title}</h3>
-                        <Badge className={`${getStatusColor(report.status)}`}>
-                          {report.status}
-                        </Badge>
-                      </div>
+              {reportsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                  <span className="text-white/80">Loading reports...</span>
+                </div>
+              ) : recentReports.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-white/80 mb-4">You haven&apos;t submitted any reports yet.</p>
+                  <Button onClick={() => router.push("/report")} className="bg-gradient-primary">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Submit Your First Report
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentReports.map((report, index) => (
+                    <motion.div
+                      key={report.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          {getStatusIcon(report.verification_status)}
+                          <h3 className="font-semibold text-foreground">{report.title}</h3>
+                          <StatusBadge 
+                            status={report.verification_status} 
+                            type="verification" 
+                          />
+                        </div>
                         <div className="flex items-center space-x-4 text-sm text-white/70">
-                        <div className="flex items-center">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {report.location}
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {new Date(report.date).toLocaleDateString()}
+                          <div className="flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {report.address}
+                          </div>
+                          <div className="flex items-center">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(report.created_at).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-vibrant-orange">
-                        {report.points > 0 ? `+${report.points}` : "0"} pts
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">
+                          {report.issue_category?.type || 'Unknown'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -391,11 +391,11 @@ const Profile = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-semibold text-foreground">{entry.reason}</p>
-                            <p className="text-sm text-white/80">{entry.date}</p>
+                            <p className="text-sm text-white/70">{entry.date}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-bold text-vibrant-yellow">+{entry.points}</p>
-                            <Star className="h-4 w-4 text-vibrant-orange inline" />
+                            <p className="text-lg font-bold text-primary">+{entry.points}</p>
+                            <Star className="h-4 w-4 text-accent inline" />
                           </div>
                         </div>
                       </motion.div>
@@ -421,7 +421,7 @@ const Profile = () => {
                     </Button>
                   </div>
                   <div className="space-y-3">
-                    {allReports.map((report, index) => (
+                    {reports.map((report, index) => (
                       <motion.div
                         key={report.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -431,27 +431,26 @@ const Profile = () => {
                       >
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-foreground">{report.title}</h3>
-                          <Badge className={getStatusColor(report.status)}>
-                            {getStatusIcon(report.status)}
-                            <span className="ml-1 capitalize">{report.status.replace('-', ' ')}</span>
-                          </Badge>
+                          <StatusBadge 
+                            status={report.verification_status} 
+                            type="verification" 
+                          />
                         </div>
                         <p className="text-sm text-white/80 mb-2">{report.description}</p>
                         <div className="flex items-center justify-between text-sm text-white/70">
                           <div className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {report.location}
+                            {report.address}
                           </div>
                           <div className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1" />
-                            {report.date}
+                            {new Date(report.created_at).toLocaleDateString()}
                           </div>
-                          {report.points > 0 && (
-                            <div className="flex items-center">
-                              <Star className="h-4 w-4 mr-1 text-vibrant-orange" />
-                              +{report.points} pts
-                            </div>
-                          )}
+                          <div className="flex items-center">
+                            <span className="text-foreground font-medium">
+                              {report.issue_category?.type || 'Unknown'}
+                            </span>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -476,30 +475,30 @@ const Profile = () => {
                     </Button>
                   </div>
                   <div className="space-y-3">
-                    {allReports.filter(report => report.status === 'resolved').map((report, index) => (
+                    {reports.filter(report => report.verification_status === 'verified').map((report, index) => (
                       <motion.div
                         key={report.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="p-4 border border-green-300/30 rounded-lg bg-gradient-to-r from-green-400/10 to-green-600/10"
+                        className="p-4 border border-success/30 rounded-lg bg-success/10"
                       >
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-foreground">{report.title}</h3>
-                          <Badge className="bg-gradient-to-r from-green-400 to-green-600 text-white border-green-300">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Resolved
-                          </Badge>
+                          <StatusBadge 
+                            status="verified" 
+                            type="verification" 
+                          />
                         </div>
                         <p className="text-sm text-white/80 mb-2">{report.description}</p>
                         <div className="flex items-center justify-between text-sm text-white/70">
                           <div className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {report.location}
+                            {report.address}
                           </div>
                           <div className="flex items-center">
-                            <Star className="h-4 w-4 mr-1 text-vibrant-orange" />
-                            +{report.points} pts earned
+                            <Star className="h-4 w-4 mr-1 text-accent" />
+                            +50 pts earned
                           </div>
                         </div>
                       </motion.div>
@@ -531,7 +530,7 @@ const Profile = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.1 }}
-                        className="p-4 border border-purple-300/30 rounded-lg bg-gradient-to-r from-purple-400/10 to-purple-600/10 text-center"
+                        className="p-4 border border-accent/30 rounded-lg bg-accent/10 text-center"
                       >
                         <div className="text-3xl mb-2">{achievement.icon}</div>
                         <h3 className="font-semibold text-foreground mb-1">{achievement.title}</h3>
@@ -546,9 +545,8 @@ const Profile = () => {
           )}
         </AnimatePresence>
       </main>
-      <Footer />
     </div>
   );
 };
 
-export default Profile;
+export default ProfileWrapper;

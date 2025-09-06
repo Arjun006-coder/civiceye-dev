@@ -4,103 +4,61 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, CheckCircle, Clock, Calendar, FileText, Users } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle, Clock, Calendar, FileText, Users, Loader2, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Footer } from "@/components/Footer";
+import { useEffect, useState } from "react";
+import { MunicipalityAction } from "@/lib/supabase";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const Municipality = () => {
   const router = useRouter();
+  const [actions, setActions] = useState<MunicipalityAction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const municipalityActions = [
-    {
-      id: 1,
-      title: "Street Light Repair Initiative",
-      description: "Comprehensive repair and upgrade of street lighting across downtown area",
-      status: "completed",
-      date: "2025-08-15",
-      department: "Public Works",
-      budget: "$45,000",
-      reportsAddressed: 15,
-      timeline: "2 weeks"
-    },
-    {
-      id: 2,
-      title: "Road Pothole Repair Program",
-      description: "Systematic pothole repair across major residential streets",
-      status: "in-progress",
-      date: "2025-08-28",
-      department: "Transportation",
-      budget: "$120,000",
-      reportsAddressed: 28,
-      timeline: "4 weeks"
-    },
-    {
-      id: 3,
-      title: "Park Safety Enhancement",
-      description: "Installation of additional security lighting and emergency call boxes",
-      status: "planned",
-      date: "2025-09-10",
-      department: "Parks & Recreation",
-      budget: "$75,000",
-      reportsAddressed: 8,
-      timeline: "3 weeks"
-    },
-    {
-      id: 4,
-      title: "Waste Collection Route Optimization",
-      description: "Reorganization of waste collection schedules to improve efficiency",
-      status: "completed",
-      date: "2025-08-01",
-      department: "Sanitation",
-      budget: "$25,000",
-      reportsAddressed: 22,
-      timeline: "1 week"
-    },
-    {
-      id: 5,
-      title: "Traffic Signal Modernization",
-      description: "Upgrade of traffic control systems with smart technology",
-      status: "in-progress",
-      date: "2025-09-01",
-      department: "Traffic Management",
-      budget: "$200,000",
-      reportsAddressed: 12,
-      timeline: "6 weeks"
-    }
-  ];
+  useEffect(() => {
+    fetchActions();
+  }, []);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case "in-progress":
-        return <Clock className="h-4 w-4 text-warning" />;
-      case "planned":
-        return <Calendar className="h-4 w-4 text-info" />;
-      default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+  const fetchActions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/actions');
+      if (!response.ok) throw new Error('Failed to fetch actions');
+      
+      const data = await response.json();
+      setActions(data.actions || []);
+    } catch (err) {
+      console.error('Error fetching actions:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-gradient-to-r from-green-400 to-green-600 text-white border-green-300";
-      case "in-progress":
-        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-yellow-300";
-      case "planned":
-        return "bg-gradient-to-r from-blue-400 to-blue-600 text-white border-blue-300";
+        return "bg-gradient-to-r from-green-400 to-green-600 text-green-900";
+      case "in_progress":
+        return "bg-gradient-to-r from-blue-400 to-blue-600 text-blue-900";
+      case "planning":
+        return "bg-gradient-to-r from-orange-400 to-orange-600 text-orange-900";
+      case "on_hold":
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900";
+      case "rejected":
+        return "bg-gradient-to-r from-red-400 to-red-600 text-red-900";
       default:
-        return "bg-gradient-to-r from-gray-400 to-gray-600 text-white border-gray-300";
+        return "bg-gradient-to-r from-gray-400 to-gray-600 text-gray-900";
     }
   };
 
-  const totalBudget = municipalityActions.reduce((sum, action) => {
-    return sum + parseInt(action.budget.replace(/[$,]/g, ''));
+  const totalBudget = actions.reduce((sum, action) => {
+    return sum + (action.cost_estimate || 0);
   }, 0);
 
-  const completedActions = municipalityActions.filter(action => action.status === 'completed').length;
-  const totalReportsAddressed = municipalityActions.reduce((sum, action) => sum + action.reportsAddressed, 0);
+  const completedActions = actions.filter(action => action.action_type === 'completed').length;
+  const totalReportsAddressed = actions.reduce((sum, action) => sum + 1, 0); // Each action addresses one report
 
   return (
     <div className="min-h-screen gradient-bg relative overflow-hidden">
@@ -110,16 +68,18 @@ const Municipality = () => {
       <div className="floating-blob"></div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center p-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/dashboard")}
-          className="glass-effect hover:bg-primary/20 mr-4"
-        >
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold hero-text">Official Actions</h1>
+      <header className="relative z-10 flex items-center justify-between p-6">
+        <div className="flex items-center">
+          <Button
+            onClick={() => router.push("/dashboard")}
+            variant="ghost"
+            className="glass-effect hover:bg-primary/20 mr-4"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold hero-text">Official Actions</h1>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -131,20 +91,20 @@ const Municipality = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <h2 className="text-4xl font-bold mb-4 hero-text">
-            Official Government Response
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            Government Response Actions
           </h2>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            Track how your local government is addressing community-reported issues
+            Track official responses and actions taken by government departments to address community issues.
           </p>
         </motion.div>
 
-        {/* Summary Stats */}
+        {/* Stats Overview */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
           <Card className="glass-effect">
             <CardHeader className="pb-2">
@@ -154,8 +114,16 @@ const Municipality = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-blue">{municipalityActions.length}</p>
-              <p className="text-sm text-white/90 font-medium">Official initiatives</p>
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              ) : error ? (
+                <span className="text-red-400">Error</span>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-vibrant-blue">{actions.length}</p>
+                  <p className="text-sm text-white/90 font-medium">Official initiatives</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -167,34 +135,60 @@ const Municipality = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-green">{completedActions}</p>
-              <p className="text-sm text-white/90 font-medium">Finished projects</p>
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              ) : error ? (
+                <span className="text-red-400">Error</span>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-vibrant-green">{completedActions}</p>
+                  <p className="text-sm text-white/90 font-medium">Successfully completed</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
           <Card className="glass-effect">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <Users className="h-5 w-5 mr-2 text-secondary" />
+                <FileText className="h-5 w-5 mr-2 text-secondary" />
                 Reports Addressed
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-orange">{totalReportsAddressed}</p>
-              <p className="text-sm text-white/90 font-medium">Community issues</p>
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              ) : error ? (
+                <span className="text-red-400">Error</span>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-vibrant-purple">{totalReportsAddressed}</p>
+                  <p className="text-sm text-white/90 font-medium">Issues being addressed</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
           <Card className="glass-effect">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <FileText className="h-5 w-5 mr-2 text-accent" />
+                <Calendar className="h-5 w-5 mr-2 text-accent" />
                 Total Budget
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-vibrant-purple">${(totalBudget / 1000).toFixed(0)}K</p>
-              <p className="text-sm text-white/90 font-medium">Allocated funds</p>
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              ) : error ? (
+                <span className="text-red-400">Error</span>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-vibrant-yellow">
+                    ₹{totalBudget.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-white/90 font-medium">Allocated budget</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -210,94 +204,99 @@ const Municipality = () => {
               <CardTitle className="text-xl text-foreground">Recent Official Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {municipalityActions.map((action, index) => (
-                  <motion.div
-                    key={action.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
-                    className="p-6 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
-                  >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          {getStatusIcon(action.status)}
-                          <h3 className="text-xl font-semibold text-foreground">{action.title}</h3>
-                          <Badge className={getStatusColor(action.status)}>
-                            {action.status.replace('-', ' ')}
-                          </Badge>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
+                  <span className="text-white/80">Loading actions...</span>
+                </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                  <p className="text-red-400 mb-4">Error loading actions: {error}</p>
+                  <Button onClick={fetchActions} variant="outline">
+                    Try Again
+                  </Button>
+                </div>
+              ) : actions.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-white/80">No official actions available yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {actions.map((action, index) => (
+                    <motion.div
+                      key={action.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
+                      className="p-6 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-semibold text-foreground mb-2">
+                            {action.action_description}
+                          </h3>
+                          <div className="flex items-center space-x-4 text-sm text-white/70 mb-3">
+                            <div className="flex items-center">
+                              <Building2 className="h-4 w-4 mr-1" />
+                              {action.assigned_department}
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {action.created_at ? new Date(action.created_at).toLocaleDateString() : 'N/A'}
+                            </div>
+                            {action.cost_estimate && (
+                              <div className="flex items-center">
+                                <FileText className="h-4 w-4 mr-1" />
+                                ₹{action.cost_estimate.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-white/90 mb-3 font-medium">
-                          {action.description}
-                        </p>
+                        <StatusBadge 
+                          status={action.action_type} 
+                          type="action" 
+                        />
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Building2 className="h-4 w-4 text-primary" />
-                        <div>
-                          <p className="font-medium text-foreground">Department</p>
-                          <p className="text-white/80">{action.department}</p>
+                      {action.report && (
+                        <div className="bg-card/50 rounded-lg p-4 mb-4">
+                          <h4 className="font-semibold text-foreground mb-2">Related Report</h4>
+                          <p className="text-sm text-white/80 mb-2">{action.report.title}</p>
+                          <div className="flex items-center space-x-4 text-xs text-white/60">
+                            <span>{action.report.address}</span>
+                            <span>{action.report.issue_category?.type || 'Unknown'}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-secondary" />
-                        <div>
-                          <p className="font-medium text-foreground">Start Date</p>
-                          <p className="text-white/80">{new Date(action.date).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4 text-accent" />
-                        <div>
-                          <p className="font-medium text-foreground">Budget</p>
-                          <p className="text-white/80">{action.budget}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4 text-warning" />
-                        <div>
-                          <p className="font-medium text-foreground">Reports</p>
-                          <p className="text-white/80">{action.reportsAddressed} addressed</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-border/50">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-white/80">
-                          Timeline: {action.timeline}
-                        </span>
-                        {action.status === 'completed' && (
-                          <span className="text-sm text-vibrant-green font-medium">
-                            ✓ Project completed successfully
+                        <div className="flex items-center space-x-4">
+                          <Badge variant="outline" className="text-white/70 border-white/30">
+                            Priority: {action.priority_level}
+                          </Badge>
+                          {action.estimated_completion && (
+                            <span className="text-sm text-white/70">
+                              Est. Completion: {new Date(action.estimated_completion).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-white/50" />
+                          <span className="text-sm text-white/70">
+                            {action.start_date ? new Date(action.start_date).toLocaleDateString() : 'Not started'}
                           </span>
-                        )}
-                        {action.status === 'in-progress' && (
-                          <span className="text-sm text-vibrant-yellow font-medium">
-                            🔄 Currently in progress
-                          </span>
-                        )}
-                        {action.status === 'planned' && (
-                          <span className="text-sm text-vibrant-blue font-medium">
-                            📅 Scheduled to begin
-                          </span>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
       </main>
-      <Footer />
     </div>
   );
 };
