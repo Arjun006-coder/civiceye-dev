@@ -12,10 +12,18 @@ import {
 
 // Simple toast state management
 let toastCount = 0;
-const listeners: Array<(toasts: any[]) => void> = [];
-let toasts: any[] = [];
+const listeners: Array<(toasts: ToastData[]) => void> = [];
+let toasts: ToastData[] = [];
 
-const addToast = (toast: any) => {
+interface ToastData {
+  id?: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+  variant?: string;
+}
+
+const addToast = (toast: ToastData) => {
   const id = (++toastCount).toString();
   const newToast = { ...toast, id };
   toasts = [newToast, ...toasts.slice(0, 1)]; // Limit to 1 toast
@@ -37,10 +45,10 @@ const removeToast = (id: string) => {
 export const toast = addToast;
 
 export function Toaster() {
-  const [toastList, setToastList] = React.useState<any[]>([]);
+  const [toastList, setToastList] = React.useState<ToastData[]>([]);
 
   React.useEffect(() => {
-    const listener = (newToasts: any[]) => setToastList(newToasts);
+    const listener = (newToasts: ToastData[]) => setToastList(newToasts);
     listeners.push(listener);
     setToastList(toasts);
     

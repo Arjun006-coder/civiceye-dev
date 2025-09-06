@@ -38,9 +38,11 @@ const Leaderboard = () => {
   };
 
   const getRankBadgeColor = (rank: number) => {
-    if (rank <= 3) return "bg-gradient-primary text-primary-foreground";
-    if (rank <= 5) return "bg-secondary/20 text-secondary border-secondary/30";
-    return "bg-muted/20 text-muted-foreground border-muted/30";
+    if (rank === 1) return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-yellow-300";
+    if (rank === 2) return "bg-gradient-to-r from-gray-300 to-gray-500 text-white border-gray-200";
+    if (rank === 3) return "bg-gradient-to-r from-orange-400 to-orange-600 text-white border-orange-300";
+    if (rank <= 5) return "bg-gradient-to-r from-blue-400 to-blue-600 text-white border-blue-300";
+    return "bg-gradient-to-r from-purple-400 to-purple-600 text-white border-purple-300";
   };
 
   return (
@@ -75,7 +77,7 @@ const Leaderboard = () => {
           <h2 className="text-4xl font-bold mb-4 hero-text">
             Top Contributors
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Celebrating our most active community members who are making a difference
           </p>
         </motion.div>
@@ -107,21 +109,21 @@ const Leaderboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <p className="text-3xl font-bold text-primary">{user.points}</p>
-                    <p className="text-sm text-muted-foreground">Honor Points</p>
+                    <p className="text-3xl font-bold text-vibrant-blue">{user.points}</p>
+                    <p className="text-sm text-white/90 font-medium">Honor Points</p>
                     <div className="pt-2 border-t border-border/50">
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <p className="font-semibold text-foreground">{user.reports}</p>
-                          <p className="text-muted-foreground">Reports</p>
+                          <p className="font-semibold text-vibrant-green">{user.reports}</p>
+                          <p className="text-white/90 font-medium">Reports</p>
                         </div>
                         <div>
-                          <p className="font-semibold text-foreground">{user.resolved}</p>
-                          <p className="text-muted-foreground">Resolved</p>
+                          <p className="font-semibold text-vibrant-orange">{user.resolved}</p>
+                          <p className="text-white/90 font-medium">Resolved</p>
                         </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className="mt-2">
+                    <Badge className="mt-2 bg-gradient-to-r from-pink-400 to-pink-600 text-white border-pink-300">
                       {user.badge}
                     </Badge>
                   </div>
@@ -157,14 +159,14 @@ const Leaderboard = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground">{user.name}</h3>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge className="text-xs bg-gradient-to-r from-cyan-400 to-cyan-600 text-white border-cyan-300">
                           {user.badge}
                         </Badge>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-primary text-lg">{user.points}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-bold text-vibrant-blue text-lg">{user.points}</p>
+                      <p className="text-sm text-white/90 font-medium">
                         {user.reports} reports • {user.resolved} resolved
                       </p>
                     </div>
@@ -191,12 +193,12 @@ const Leaderboard = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Your Position</h3>
-                    <p className="text-muted-foreground">Keep reporting to climb higher!</p>
+                    <p className="text-white/80">Keep reporting to climb higher!</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-primary text-xl">450</p>
-                  <p className="text-sm text-muted-foreground">Honor Points</p>
+                  <p className="font-bold text-vibrant-purple text-xl">450</p>
+                  <p className="text-sm text-white/90 font-medium">Honor Points</p>
                 </div>
               </div>
             </CardContent>

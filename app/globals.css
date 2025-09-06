@@ -259,3 +259,45 @@
 .animation-delay-2000 {
   animation-delay: 2s;
 }
+
+/* Additional utility classes for Lovable components */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.5);
+}
+
+/* Vibrant color utilities */
+.text-vibrant-blue { color: #3b82f6; }
+.text-vibrant-green { color: #10b981; }
+.text-vibrant-purple { color: #8b5cf6; }
+.text-vibrant-orange { color: #f59e0b; }
+.text-vibrant-pink { color: #ec4899; }
+.text-vibrant-cyan { color: #06b6d4; }
+.text-vibrant-red { color: #ef4444; }
+.text-vibrant-yellow { color: #eab308; }
+
+.bg-vibrant-blue { background-color: #3b82f6; }
+.bg-vibrant-green { background-color: #10b981; }
+.bg-vibrant-purple { background-color: #8b5cf6; }
+.bg-vibrant-orange { background-color: #f59e0b; }
+.bg-vibrant-pink { background-color: #ec4899; }
+.bg-vibrant-cyan { background-color: #06b6d4; }
+.bg-vibrant-red { background-color: #ef4444; }
+.bg-vibrant-yellow { background-color: #eab308; }
+
+/* Gradient backgrounds */
+.bg-gradient-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.bg-gradient-green { background: linear-gradient(135deg, #10b981, #059669); }
+.bg-gradient-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.bg-gradient-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.bg-gradient-pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+.bg-gradient-cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

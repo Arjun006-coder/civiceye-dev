@@ -85,13 +85,13 @@ const Municipality = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-success/20 text-success border-success/30";
+        return "bg-gradient-to-r from-green-400 to-green-600 text-white border-green-300";
       case "in-progress":
-        return "bg-warning/20 text-warning border-warning/30";
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-yellow-300";
       case "planned":
-        return "bg-info/20 text-info border-info/30";
+        return "bg-gradient-to-r from-blue-400 to-blue-600 text-white border-blue-300";
       default:
-        return "bg-muted/20 text-muted-foreground border-muted/30";
+        return "bg-gradient-to-r from-gray-400 to-gray-600 text-white border-gray-300";
     }
   };
 
@@ -119,7 +119,7 @@ const Municipality = () => {
           <ArrowLeft className="h-5 w-5 mr-2" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold hero-text">Municipality Actions</h1>
+        <h1 className="text-3xl font-bold hero-text">Official Actions</h1>
       </header>
 
       {/* Main Content */}
@@ -134,7 +134,7 @@ const Municipality = () => {
           <h2 className="text-4xl font-bold mb-4 hero-text">
             Official Government Response
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Track how your local government is addressing community-reported issues
           </p>
         </motion.div>
@@ -154,8 +154,8 @@ const Municipality = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-primary">{municipalityActions.length}</p>
-              <p className="text-sm text-muted-foreground">Government initiatives</p>
+              <p className="text-3xl font-bold text-vibrant-blue">{municipalityActions.length}</p>
+              <p className="text-sm text-white/90 font-medium">Official initiatives</p>
             </CardContent>
           </Card>
 
@@ -167,8 +167,8 @@ const Municipality = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-success">{completedActions}</p>
-              <p className="text-sm text-muted-foreground">Finished projects</p>
+              <p className="text-3xl font-bold text-vibrant-green">{completedActions}</p>
+              <p className="text-sm text-white/90 font-medium">Finished projects</p>
             </CardContent>
           </Card>
 
@@ -180,8 +180,8 @@ const Municipality = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-secondary">{totalReportsAddressed}</p>
-              <p className="text-sm text-muted-foreground">Community issues</p>
+              <p className="text-3xl font-bold text-vibrant-orange">{totalReportsAddressed}</p>
+              <p className="text-sm text-white/90 font-medium">Community issues</p>
             </CardContent>
           </Card>
 
@@ -193,8 +193,8 @@ const Municipality = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-accent">${(totalBudget / 1000).toFixed(0)}K</p>
-              <p className="text-sm text-muted-foreground">Allocated funds</p>
+              <p className="text-3xl font-bold text-vibrant-purple">${(totalBudget / 1000).toFixed(0)}K</p>
+              <p className="text-sm text-white/90 font-medium">Allocated funds</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -207,7 +207,7 @@ const Municipality = () => {
         >
           <Card className="glass-effect">
             <CardHeader>
-              <CardTitle className="text-xl text-foreground">Recent Municipality Actions</CardTitle>
+              <CardTitle className="text-xl text-foreground">Recent Official Actions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -228,7 +228,7 @@ const Municipality = () => {
                             {action.status.replace('-', ' ')}
                           </Badge>
                         </div>
-                        <p className="text-muted-foreground mb-3">
+                        <p className="text-white/90 mb-3 font-medium">
                           {action.description}
                         </p>
                       </div>
@@ -239,7 +239,7 @@ const Municipality = () => {
                         <Building2 className="h-4 w-4 text-primary" />
                         <div>
                           <p className="font-medium text-foreground">Department</p>
-                          <p className="text-muted-foreground">{action.department}</p>
+                          <p className="text-white/80">{action.department}</p>
                         </div>
                       </div>
 
@@ -247,7 +247,7 @@ const Municipality = () => {
                         <Calendar className="h-4 w-4 text-secondary" />
                         <div>
                           <p className="font-medium text-foreground">Start Date</p>
-                          <p className="text-muted-foreground">{new Date(action.date).toLocaleDateString()}</p>
+                          <p className="text-white/80">{new Date(action.date).toLocaleDateString()}</p>
                         </div>
                       </div>
 
@@ -255,7 +255,7 @@ const Municipality = () => {
                         <FileText className="h-4 w-4 text-accent" />
                         <div>
                           <p className="font-medium text-foreground">Budget</p>
-                          <p className="text-muted-foreground">{action.budget}</p>
+                          <p className="text-white/80">{action.budget}</p>
                         </div>
                       </div>
 
@@ -263,28 +263,28 @@ const Municipality = () => {
                         <Users className="h-4 w-4 text-warning" />
                         <div>
                           <p className="font-medium text-foreground">Reports</p>
-                          <p className="text-muted-foreground">{action.reportsAddressed} addressed</p>
+                          <p className="text-white/80">{action.reportsAddressed} addressed</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-border/50">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-white/80">
                           Timeline: {action.timeline}
                         </span>
                         {action.status === 'completed' && (
-                          <span className="text-sm text-success font-medium">
+                          <span className="text-sm text-vibrant-green font-medium">
                             ✓ Project completed successfully
                           </span>
                         )}
                         {action.status === 'in-progress' && (
-                          <span className="text-sm text-warning font-medium">
+                          <span className="text-sm text-vibrant-yellow font-medium">
                             🔄 Currently in progress
                           </span>
                         )}
                         {action.status === 'planned' && (
-                          <span className="text-sm text-info font-medium">
+                          <span className="text-sm text-vibrant-blue font-medium">
                             📅 Scheduled to begin
                           </span>
                         )}

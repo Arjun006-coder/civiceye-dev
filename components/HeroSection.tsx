@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CivicCard } from "./CivicCard";
+import { useRouter } from "next/navigation";
 
 const civicFeatures = [
   {
@@ -28,6 +29,8 @@ const civicFeatures = [
 ];
 
 export const HeroSection = () => {
+  const router = useRouter();
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden gradient-bg">
       {/* Animated Background Blobs */}
@@ -83,7 +86,7 @@ export const HeroSection = () => {
             className="bg-gradient-primary hover:opacity-90 text-primary-foreground font-semibold px-8 py-4 text-lg rounded-xl shadow-glow animate-glow"
             onClick={() => {
               // Navigate to sign-in page
-              window.location.href = '/sign-in';
+              router.push('/sign-in');
             }}
           >
             Get Started

@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Github, Linkedin, Mail } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 
 const teamMembers = [
@@ -57,6 +58,22 @@ const teamMembers = [
 ];
 
 const Team = () => {
+  const router = useRouter();
+
+  const handleGoBack = () => {
+    // Check if we came from within the app (not external)
+    const referrer = document.referrer;
+    const currentOrigin = window.location.origin;
+    
+    if (referrer && referrer.startsWith(currentOrigin)) {
+      // We came from within the app, go back
+      router.back();
+    } else {
+      // No referrer or external referrer, go to home
+      router.push('/');
+    }
+  };
+  
   return (
     <div className="min-h-screen gradient-bg">
       {/* Animated Background Blobs */}
@@ -74,15 +91,14 @@ const Team = () => {
           transition={{ duration: 0.5 }}
           className="max-w-6xl mx-auto mb-8"
         >
-          <Link href="/">
-            <Button
-              variant="ghost"
-              className="text-gray-300 hover:text-white"
-            >
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Home
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            onClick={handleGoBack}
+            className="text-white hover:text-gray-200 hover:bg-white/10"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Go Back
+          </Button>
         </motion.div>
 
         {/* Header */}
@@ -95,7 +111,7 @@ const Team = () => {
           <h1 className="text-5xl md:text-6xl font-bold hero-text mb-6">
             Meet Our Team
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Passionate individuals working together to strengthen communities through technology
           </p>
         </motion.div>
@@ -120,10 +136,10 @@ const Team = () => {
                     <h3 className="text-xl font-semibold text-white mb-1">
                       {member.name}
                     </h3>
-                    <p className="text-primary font-medium mb-3">
+                    <p className="text-vibrant-cyan font-medium mb-3">
                       {member.role}
                     </p>
-                    <p className="text-sm text-gray-300 mb-4 leading-relaxed">
+                    <p className="text-sm text-white/80 mb-4 leading-relaxed">
                       {member.bio}
                     </p>
                   </div>
@@ -132,21 +148,21 @@ const Team = () => {
                   <div className="flex justify-center space-x-3">
                     <a
                       href={member.social.github}
-                      className="p-2 bg-muted hover:bg-primary rounded-lg transition-all duration-300 group"
+                      className="p-2 bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700 rounded-lg transition-all duration-300 group"
                     >
-                      <Github size={16} className="text-muted-foreground group-hover:text-primary-foreground" />
+                      <Github size={16} className="text-white group-hover:text-gray-100" />
                     </a>
                     <a
                       href={member.social.linkedin}
-                      className="p-2 bg-muted hover:bg-primary rounded-lg transition-all duration-300 group"
+                      className="p-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 rounded-lg transition-all duration-300 group"
                     >
-                      <Linkedin size={16} className="text-muted-foreground group-hover:text-primary-foreground" />
+                      <Linkedin size={16} className="text-white group-hover:text-blue-100" />
                     </a>
                     <a
                       href={`mailto:${member.social.email}`}
-                      className="p-2 bg-muted hover:bg-primary rounded-lg transition-all duration-300 group"
+                      className="p-2 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 rounded-lg transition-all duration-300 group"
                     >
-                      <Mail size={16} className="text-muted-foreground group-hover:text-primary-foreground" />
+                      <Mail size={16} className="text-white group-hover:text-red-100" />
                     </a>
                   </div>
                 </CardContent>

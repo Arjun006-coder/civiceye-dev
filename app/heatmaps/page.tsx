@@ -23,13 +23,13 @@ const Heatmaps = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "high":
-        return "bg-destructive/20 text-destructive border-destructive/30";
+        return "bg-gradient-to-r from-red-400 to-red-600 text-white border-red-300";
       case "medium":
-        return "bg-warning/20 text-warning border-warning/30";
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-yellow-300";
       case "low":
-        return "bg-success/20 text-success border-success/30";
+        return "bg-gradient-to-r from-green-400 to-green-600 text-white border-green-300";
       default:
-        return "bg-muted/20 text-muted-foreground border-muted/30";
+        return "bg-gradient-to-r from-gray-400 to-gray-600 text-white border-gray-300";
     }
   };
 
@@ -76,7 +76,7 @@ const Heatmaps = () => {
           <h2 className="text-4xl font-bold mb-4 hero-text">
             City Issue Visualization
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Analyze report density and trends across different areas of the city
           </p>
         </motion.div>
@@ -102,22 +102,22 @@ const Heatmaps = () => {
                   <h3 className="text-xl font-semibold text-foreground mb-2">
                     Interactive Heatmap
                   </h3>
-                  <p className="text-muted-foreground max-w-md">
+                  <p className="text-white/80 max-w-md">
                     This interactive map will show report density across the city with color-coded zones. 
                     Backend integration required for real-time data visualization.
                   </p>
                   <div className="flex justify-center space-x-4 mt-4">
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-destructive rounded-full"></div>
-                      <span className="text-sm text-foreground">High Activity</span>
+                      <div className="w-4 h-4 bg-gradient-to-r from-red-400 to-red-600 rounded-full"></div>
+                      <span className="text-sm text-white font-medium">High Activity</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-warning rounded-full"></div>
-                      <span className="text-sm text-foreground">Medium Activity</span>
+                      <div className="w-4 h-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full"></div>
+                      <span className="text-sm text-white font-medium">Medium Activity</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-success rounded-full"></div>
-                      <span className="text-sm text-foreground">Low Activity</span>
+                      <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full"></div>
+                      <span className="text-sm text-white font-medium">Low Activity</span>
                     </div>
                   </div>
                 </div>
@@ -155,14 +155,14 @@ const Heatmaps = () => {
                           {area.status} activity
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-white/80">
                         Main issue: {area.mainIssue}
                       </p>
                     </div>
                     <div className="text-right flex items-center space-x-3">
                       <div>
-                        <p className="font-bold text-primary text-lg">{area.reports}</p>
-                        <p className="text-xs text-muted-foreground">reports</p>
+                        <p className="font-bold text-vibrant-blue text-lg">{area.reports}</p>
+                        <p className="text-xs text-white/80 font-medium">reports</p>
                       </div>
                       {getTrendIcon(area.trend)}
                     </div>
@@ -181,41 +181,41 @@ const Heatmaps = () => {
                 <div className="text-center p-4 border border-border/50 rounded-lg">
                   <div className="flex items-center justify-center mb-2">
                     <AlertTriangle className="h-6 w-6 text-destructive mr-2" />
-                    <span className="text-2xl font-bold text-destructive">3</span>
+                    <span className="text-2xl font-bold text-vibrant-red">3</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">High Activity Areas</p>
+                  <p className="text-sm text-white/90 font-medium">High Activity Areas</p>
                 </div>
 
                 <div className="text-center p-4 border border-border/50 rounded-lg">
                   <div className="flex items-center justify-center mb-2">
                     <BarChart3 className="h-6 w-6 text-primary mr-2" />
-                    <span className="text-2xl font-bold text-primary">167</span>
+                    <span className="text-2xl font-bold text-vibrant-blue">167</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Total Reports This Month</p>
+                  <p className="text-sm text-white/90 font-medium">Total Reports This Month</p>
                 </div>
 
                 <div className="text-center p-4 border border-border/50 rounded-lg">
                   <div className="flex items-center justify-center mb-2">
                     <TrendingUp className="h-6 w-6 text-secondary mr-2" />
-                    <span className="text-2xl font-bold text-secondary">28%</span>
+                    <span className="text-2xl font-bold text-vibrant-green">28%</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Increase from Last Month</p>
+                  <p className="text-sm text-white/90 font-medium">Increase from Last Month</p>
                 </div>
 
                 <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
                   <h4 className="font-semibold text-foreground mb-2">Trending Issues</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Road Maintenance</span>
-                      <span className="text-primary font-medium">32%</span>
+                      <span className="text-white/80">Road Maintenance</span>
+                      <span className="text-vibrant-orange font-medium">32%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Traffic Issues</span>
-                      <span className="text-primary font-medium">24%</span>
+                      <span className="text-white/80">Traffic Issues</span>
+                      <span className="text-vibrant-yellow font-medium">24%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Street Lighting</span>
-                      <span className="text-primary font-medium">18%</span>
+                      <span className="text-white/80">Street Lighting</span>
+                      <span className="text-vibrant-cyan font-medium">18%</span>
                     </div>
                   </div>
                 </div>

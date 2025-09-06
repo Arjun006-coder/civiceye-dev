@@ -23,28 +23,28 @@ const Dashboard = () => {
       description: "Report civic issues in your area",
       icon: PlusCircle,
       action: () => router.push("/report"),
-      color: "bg-gradient-primary"
+      color: "bg-gradient-to-r from-green-500 to-green-700"
     },
     {
       title: "Leaderboard",
       description: "Check community rankings",
       icon: Trophy,
       action: () => router.push("/leaderboard"),
-      color: "bg-gradient-to-r from-secondary to-accent"
+      color: "bg-gradient-to-r from-yellow-500 to-yellow-700"
     },
     {
-      title: "Municipality Actions",
+      title: "Official Actions",
       description: "View official responses",
       icon: BarChart3,
       action: () => router.push("/municipality"),
-      color: "bg-gradient-to-r from-accent to-primary"
+      color: "bg-gradient-to-r from-blue-500 to-blue-700"
     },
     {
       title: "Report Heatmaps",
       description: "Visualize area issues",
       icon: MapPin,
       action: () => router.push("/heatmaps"),
-      color: "bg-gradient-to-r from-primary to-secondary"
+      color: "bg-gradient-to-r from-purple-500 to-purple-700"
     }
   ];
 
@@ -81,7 +81,7 @@ const Dashboard = () => {
           <h2 className="text-5xl font-bold mb-4 hero-text">
             Welcome Back!
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Make your community better by reporting issues and tracking progress
           </p>
         </motion.div>
@@ -113,7 +113,7 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">
+                  <p className="text-white/80">
                     {card.description}
                   </p>
                 </CardContent>
@@ -137,8 +137,8 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-primary">12</p>
-              <p className="text-muted-foreground">Total submitted</p>
+              <p className="text-3xl font-bold text-vibrant-blue">12</p>
+              <p className="text-white/90 font-medium">Total submitted</p>
             </CardContent>
           </Card>
 
@@ -150,8 +150,8 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-secondary">450</p>
-              <p className="text-muted-foreground">Community rank: #23</p>
+              <p className="text-3xl font-bold text-vibrant-yellow">450</p>
+              <p className="text-white/90 font-medium">Community rank: #23</p>
             </CardContent>
           </Card>
 
@@ -163,8 +163,8 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-accent">8</p>
-              <p className="text-muted-foreground">67% resolution rate</p>
+              <p className="text-3xl font-bold text-vibrant-green">8</p>
+              <p className="text-white/90 font-medium">67% resolution rate</p>
             </CardContent>
           </Card>
         </motion.div>
