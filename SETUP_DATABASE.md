@@ -403,3 +403,6 @@ For issues or questions, check:
 - Supabase documentation
 - Clerk documentation
 - Next.js documentation
+
+
+

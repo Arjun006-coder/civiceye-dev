@@ -127,11 +127,11 @@ export async function POST(request: NextRequest) {
     // Calculate dynamic confidence score
     let confidenceScore = 0.5 // Base score
 
-    // Factor 1: User reputation (0-0.3 points)
-    const reputationBonus = Math.min(user.reputation / 100, 0.3)
-    confidenceScore += reputationBonus
+    // Factor 1: User reputation (0.1-0.2 points) - 10-20% bonus
+    const reputationBonus = Math.min(user.reputation / 100, 0.2)
+    confidenceScore += Math.max(reputationBonus, 0.1) // Minimum 10% bonus
 
-    // Factor 2: Multiple reports in same area (0-0.2 points)
+    // Factor 2: Multiple reports in same area (0.1-0.3 points) - 10-30% bonus for 3-4+ reports
     let nearbySimilarReports = null
     if (latitude && longitude) {
       const { data: nearbyReports } = await supabaseAdmin
@@ -143,10 +143,12 @@ export async function POST(request: NextRequest) {
 
       nearbySimilarReports = nearbyReports
 
-      if (nearbyReports && nearbyReports.length >= 3) {
-        confidenceScore += 0.2 // Bonus for multiple reports
+      if (nearbyReports && nearbyReports.length >= 4) {
+        confidenceScore += 0.3 // 30% bonus for 4+ reports
+      } else if (nearbyReports && nearbyReports.length >= 3) {
+        confidenceScore += 0.2 // 20% bonus for 3 reports
       } else if (nearbyReports && nearbyReports.length >= 2) {
-        confidenceScore += 0.1 // Smaller bonus for 2 reports
+        confidenceScore += 0.1 // 10% bonus for 2 reports
       }
     }
 

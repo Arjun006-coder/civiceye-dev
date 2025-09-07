@@ -366,7 +366,7 @@ const ReportPage = () => {
                 <div className="space-y-2">
                   <Label className="text-foreground">Photos (Required) *</Label>
                   
-                  {/* Camera Input */}
+                  {/* Camera Input - Camera Only */}
                   <input
                     type="file"
                     id="camera-capture"
@@ -413,7 +413,7 @@ const ReportPage = () => {
                       )}
                     </div>
                     
-                    <p className="text-xs text-white/50 mt-2">Take photos directly with your camera</p>
+                    <p className="text-xs text-white/50 mt-2">Camera only - No gallery or file uploads allowed</p>
                     
                     {/* Selected Files Preview */}
                     {selectedFiles.length > 0 && (
