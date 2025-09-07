@@ -34,7 +34,7 @@ const Heatmaps = () => {
   const fetchHeatmapData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/reports?status=pending,verified,auto_verified');
+      const response = await fetch('/api/heatmap-mock');
       if (!response.ok) throw new Error('Failed to fetch heatmap data');
       
       const data = await response.json();
@@ -51,7 +51,7 @@ const Heatmaps = () => {
     switch (status) {
       case 'verified':
         return "bg-gradient-to-r from-green-500 to-green-700";
-      case 'auto_verified':
+      case 'under_review':
         return "bg-gradient-to-r from-blue-500 to-blue-700";
       case 'pending':
         return "bg-gradient-to-r from-yellow-500 to-yellow-700";
@@ -64,8 +64,8 @@ const Heatmaps = () => {
     switch (status) {
       case 'verified':
         return "Verified";
-      case 'auto_verified':
-        return "Auto Verified";
+      case 'under_review':
+        return "Under Review";
       case 'pending':
         return "Pending";
       default:
@@ -92,7 +92,7 @@ const Heatmaps = () => {
   const stats = {
     totalReports: reports.length,
     verifiedReports: reports.filter(r => r.verification_status === 'verified').length,
-    autoVerifiedReports: reports.filter(r => r.verification_status === 'auto_verified').length,
+    underReviewReports: reports.filter(r => r.verification_status === 'under_review').length,
     pendingReports: reports.filter(r => r.verification_status === 'pending').length,
     avgConfidence: reports.length > 0 
       ? reports.reduce((sum, r) => sum + (r.final_confidence_score || 0), 0) / reports.length 

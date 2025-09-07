@@ -11,7 +11,7 @@ export async function GET() {
         user:users(*),
         issue_category:issue_categories(*)
       `)
-      .in('verification_status', ['pending', 'verified', 'auto_verified'])
+      .in('verification_status', ['pending', 'verified', 'under_review'])
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
       .order('created_at', { ascending: false })

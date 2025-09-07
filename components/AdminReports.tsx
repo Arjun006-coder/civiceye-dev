@@ -42,7 +42,7 @@ export default function AdminReports() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/reports');
+      const response = await fetch('/api/heatmap-mock');
       if (!response.ok) throw new Error('Failed to fetch reports');
       
       const data = await response.json();

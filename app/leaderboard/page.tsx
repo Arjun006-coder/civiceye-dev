@@ -22,7 +22,7 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/leaderboard');
+      const response = await fetch('/api/leaderboard-mock');
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       
       const data = await response.json();

@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { full_name, email, address, bio, profile_pic_url } = body;
+    const { full_name, email, address, bio, phone_number, profile_pic_url } = body;
 
     // Try to update user profile
     const { data: user, error } = await supabaseAdmin
@@ -74,6 +74,7 @@ export async function PUT(request: NextRequest) {
         email,
         address,
         bio,
+        phone_number,
         profile_pic_url,
         updated_at: new Date().toISOString(),
       })

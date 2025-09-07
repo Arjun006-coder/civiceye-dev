@@ -170,65 +170,7 @@ const UserDashboard = () => {
           </Card>
         </motion.div>
 
-        {/* Stats Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-        >
-          <Card className="glass-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
-                <FileText className="h-5 w-5 mr-2 text-primary" />
-                Total Reports
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-vibrant-blue">{userStats.totalReports}</p>
-              <p className="text-white/90 font-medium">All time submissions</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
-                <CheckCircle className="h-5 w-5 mr-2 text-success" />
-                Verified
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-vibrant-green">{userStats.verifiedReports}</p>
-              <p className="text-white/90 font-medium">Successfully verified</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
-                <Clock className="h-5 w-5 mr-2 text-warning" />
-                Pending
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-vibrant-orange">{userStats.pendingReports}</p>
-              <p className="text-white/90 font-medium">Awaiting review</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
-                <Trophy className="h-5 w-5 mr-2 text-accent" />
-                Honor Points
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-vibrant-purple">{userStats.honorPoints}</p>
-              <p className="text-white/90 font-medium">Community contribution</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Stats moved to Profile page */}
 
         {/* Dashboard Actions */}
         <motion.div

@@ -54,7 +54,7 @@ const ProfileContent = () => {
   const fetchUserReports = async () => {
     try {
       setReportsLoading(true);
-      const response = await fetch('/api/reports');
+      const response = await fetch('/api/user-reports-mock');
       if (!response.ok) throw new Error('Failed to fetch reports');
       
       const data = await response.json();
@@ -199,10 +199,15 @@ const ProfileContent = () => {
           <Card className="glass-effect">
             <CardHeader>
               <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-foreground">
-                    {dbUser.full_name?.charAt(0) || 'U'}
-                  </span>
+                <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center bg-gradient-primary">
+                  {dbUser.profile_pic_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={dbUser.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-primary-foreground">
+                      {dbUser.full_name?.charAt(0) || 'U'}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">{dbUser.full_name}</h2>

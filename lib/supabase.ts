@@ -19,6 +19,7 @@ export interface User {
   address?: string
   bio?: string
   profile_pic_url?: string
+  phone_number?: string
   honor_score_points: number
   reputation: number
   role: 'user' | 'admin'
@@ -40,7 +41,7 @@ export interface Report {
   title: string
   description: string
   issue_category_id: string
-  verification_status: 'pending' | 'verified' | 'rejected' | 'under_review' | 'auto_verified'
+  verification_status: 'pending' | 'verified' | 'rejected' | 'under_review'
   verification_color: string
   latitude: number
   longitude: number

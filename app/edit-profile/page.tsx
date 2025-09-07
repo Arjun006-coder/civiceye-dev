@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Save } from 'lucide-react';
+import { ArrowLeft, Camera, Save, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,30 +11,136 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/hooks/use-user';
+import { toast } from 'sonner';
 
 const EditProfile = () => {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, loading: userLoading } = useUser();
   
   const [profile, setProfile] = useState({
-    name: 'Alex Johnson',
-    email: 'alex.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Main St, Anytown, AT 12345',
-    bio: 'Passionate citizen committed to improving our community through civic engagement.',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    bio: '',
   });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.full_name || '',
+        email: user.email || '',
+        phone: user.phone_number || '',
+        address: user.address || '',
+        bio: user.bio || '',
+      });
+      setAvatarUrl(user.profile_pic_url);
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setProfile(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been successfully updated.",
-    });
-    router.push('/profile');
+  const handleSave = async () => {
+    if (!user) {
+      toast({ title: 'Error', description: 'User not found' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: profile.name,
+          phone_number: profile.phone,
+          address: profile.address,
+          bio: profile.bio,
+          profile_pic_url: avatarUrl
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      toast({ title: 'Success', description: 'Profile updated successfully!' });
+      router.push('/profile');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to update profile' });
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handlePickPhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('folder', 'avatars');
+
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to upload');
+      }
+      const data = await res.json();
+      setAvatarUrl(data.url);
+      toast({ title: 'Uploaded', description: 'Profile photo updated. Save changes to persist.' });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Upload failed', description: err instanceof Error ? err.message : 'Could not upload image' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-white/80">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <Card className="glass-effect max-w-md mx-4">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-foreground mb-4">Authentication Required</h2>
+            <p className="text-white/80 mb-6">Please sign in to edit your profile.</p>
+            <Button onClick={() => router.push('/sign-in')} className="w-full">
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 relative overflow-hidden">
@@ -96,14 +202,20 @@ const EditProfile = () => {
                 <CardTitle className="text-emerald-800">Profile Picture</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
-                <Avatar className="w-24 h-24">
-                  <AvatarFallback className="bg-emerald-100 text-emerald-800 text-xl">
-                    AJ
-                  </AvatarFallback>
+                <Avatar className="w-24 h-24 overflow-hidden">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-emerald-100 text-emerald-800 text-xl">
+                      {(profile.name || user.full_name || 'U').charAt(0)}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
-                <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                <Button onClick={handlePickPhoto} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" disabled={uploading}>
                   <Camera className="mr-2 h-4 w-4" />
-                  Change Photo
+                  {uploading ? 'Uploading...' : 'Change Photo'}
                 </Button>
               </CardContent>
             </Card>
@@ -182,10 +294,20 @@ const EditProfile = () => {
           >
             <Button
               onClick={handleSave}
+              disabled={saving}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
             >
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
             </Button>
           </motion.div>
         </div>

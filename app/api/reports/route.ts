@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, getVerificationColor } from '@/lib/supabase'
 import { auth } from '@clerk/nextjs/server'
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Check if tables exist by trying to query them
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('role')
+      .select('id, role')
       .eq('clerk_id', userId)
       .single()
 
@@ -44,9 +44,7 @@ export async function GET(request: NextRequest) {
     // Apply filters based on user role
     if (user.role === 'user') {
       // Users can only see verified reports and their own reports
-      query = query.or(`verification_status.eq.verified,user_id.in.(
-        select id from users where clerk_id.eq.${userId}
-      )`)
+      query = query.or(`verification_status.eq.verified,user_id.eq.${user.id}`)
     }
 
     if (status) {
@@ -57,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching reports:', error)
-      return NextResponse.json({ reports: [] })
+      return NextResponse.json({ error: error.message || 'Failed to fetch reports' }, { status: 500 })
     }
 
     return NextResponse.json({ reports: reports || [] })
@@ -69,13 +67,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== REPORT SUBMISSION START ===');
+    
     const { userId } = await auth()
+    console.log('User ID from auth:', userId);
     
     if (!userId) {
+      console.log('No user ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
+    console.log('Request body:', body);
     const { title, description, issue_category_id, latitude, longitude, address, images } = body
 
     // Check for duplicate reports within 20m radius
@@ -114,64 +117,98 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's database ID and reputation
-    const { data: user } = await supabaseAdmin
+    console.log('Looking for user with clerk_id:', userId);
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, reputation')
       .eq('clerk_id', userId)
       .single()
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    console.log('User query result:', { user, userError });
+
+    if (userError || !user) {
+      console.error('User not found in database:', userError);
+      return NextResponse.json({ 
+        error: 'User not found in database. Please refresh the page and try again.',
+        code: 'USER_NOT_FOUND'
+      }, { status: 404 })
     }
 
-    // Calculate dynamic confidence score
-    let confidenceScore = 0.5 // Base score
+    // Calculate dynamic confidence score per requested rules
+    // Base score: 30-40% → use 35%
+    let confidenceScore = 0.35
 
-    // Factor 1: User reputation (0.1-0.2 points) - 10-20% bonus
-    const reputationBonus = Math.min(user.reputation / 100, 0.2)
-    confidenceScore += Math.max(reputationBonus, 0.1) // Minimum 10% bonus
+    // Factor 1: User reputation (0-10%)
+    // Reputation of 10 → 0% bonus; scales up to +10%
+    const normalizedReputation = Math.max(0, (user.reputation - 10) / 90)
+    const reputationBonus = Math.min(0.1, normalizedReputation * 0.1)
+    confidenceScore += reputationBonus
 
-    // Factor 2: Multiple reports in same area (0.1-0.3 points) - 10-30% bonus for 3-4+ reports
-    let nearbySimilarReports = null
+    // Factor 2: Multiple reports in same area (10-20% for 3-4 within radius)
+    let nearbySimilarReports: { id: string; latitude?: number; longitude?: number }[] | null = null
+    let corroborationBonus = 0
     if (latitude && longitude) {
       const { data: nearbyReports } = await supabaseAdmin
         .from('reports')
-        .select('id')
+        .select('id, latitude, longitude, issue_category_id')
         .eq('issue_category_id', issue_category_id)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
 
-      nearbySimilarReports = nearbyReports
+      nearbySimilarReports = nearbyReports as any
 
-      if (nearbyReports && nearbyReports.length >= 4) {
-        confidenceScore += 0.3 // 30% bonus for 4+ reports
-      } else if (nearbyReports && nearbyReports.length >= 3) {
-        confidenceScore += 0.2 // 20% bonus for 3 reports
-      } else if (nearbyReports && nearbyReports.length >= 2) {
-        confidenceScore += 0.1 // 10% bonus for 2 reports
-      }
+      // Count within 100m radius
+      const R = 6371000
+      const toRad = (deg: number) => (deg * Math.PI) / 180
+      const countWithinRadius = (nearbyReports || []).reduce((count, r: any) => {
+        if (r.latitude == null || r.longitude == null) return count
+        const dLat = toRad((latitude as number) - r.latitude)
+        const dLon = toRad((longitude as number) - r.longitude)
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(latitude as number)) * Math.cos(toRad(r.latitude)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        const distance = R * c
+        return distance <= 100 ? count + 1 : count
+      }, 0)
+
+      if (countWithinRadius >= 4) corroborationBonus = 0.2
+      else if (countWithinRadius >= 3) corroborationBonus = 0.1
+      confidenceScore += corroborationBonus
     }
 
-    // Factor 3: AI analysis placeholder (0-0.3 points)
-    // This will be implemented later when AI is added
-    const aiConfidence = 0.1 // Placeholder - will be replaced with actual AI analysis
+    // Factor 3: AI analysis (0 for now)
+    const aiConfidence = 0
     confidenceScore += aiConfidence
 
-    // Factor 4: Image quality (0-0.2 points)
-    if (images && images.length > 0) {
-      confidenceScore += 0.2 // Bonus for having images
-    }
+    // Cap confidence score to max 0.8 without AI
+    confidenceScore = Math.min(Math.max(confidenceScore, 0), 0.8)
 
-    // Cap confidence score between 0 and 1
-    confidenceScore = Math.min(Math.max(confidenceScore, 0), 1)
-
-    // Determine verification status based on confidence score
-    let verificationStatus = 'pending'
+    // Determine verification status (no auto-verify status)
+    // If high confidence, mark as under_review; else pending
+    let verificationStatus: 'pending' | 'under_review' | 'verified' | 'rejected' = 'pending'
     if (confidenceScore >= 0.8) {
-      verificationStatus = 'auto_verified'
+      verificationStatus = 'under_review'
     }
 
     // Create report
+    console.log('Creating report with data:', {
+      user_id: user.id,
+      title,
+      description,
+      issue_category_id,
+      latitude,
+      longitude,
+      address,
+      images: images || [],
+      verification_status: verificationStatus,
+      verification_color: getVerificationColor(verificationStatus),
+      harmful_content: false,
+      ai_confidence_score: aiConfidence,
+      multiple_report_confidence_score: nearbySimilarReports ? Math.min(nearbySimilarReports.length * 0.1, 0.2) : 0,
+      final_confidence_score: confidenceScore
+    });
+
     const { data: report, error } = await supabaseAdmin
       .from('reports')
       .insert({
@@ -179,12 +216,12 @@ export async function POST(request: NextRequest) {
         title,
         description,
         issue_category_id,
-        latitude,
-        longitude,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
         address,
         images: images || [],
         verification_status: verificationStatus,
-        verification_color: verificationStatus === 'auto_verified' ? 'green' : 'yellow',
+        verification_color: getVerificationColor(verificationStatus),
         harmful_content: false,
         ai_confidence_score: aiConfidence,
         multiple_report_confidence_score: nearbySimilarReports ? Math.min(nearbySimilarReports.length * 0.1, 0.2) : 0,
@@ -197,9 +234,11 @@ export async function POST(request: NextRequest) {
       `)
       .single()
 
+    console.log('Report creation result:', { report, error });
+
     if (error) {
       console.error('Error creating report:', error)
-      return NextResponse.json({ error: 'Failed to create report' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create report', details: error }, { status: 500 })
     }
 
     // Update user's report count - get current points first
@@ -218,9 +257,14 @@ export async function POST(request: NextRequest) {
         .eq('id', user.id)
     }
 
+    console.log('=== REPORT SUBMISSION SUCCESS ===');
     return NextResponse.json({ report, message: 'Report created successfully' })
   } catch (error) {
+    console.error('=== REPORT SUBMISSION ERROR ===');
     console.error('Error in POST reports:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 })
   }
 }

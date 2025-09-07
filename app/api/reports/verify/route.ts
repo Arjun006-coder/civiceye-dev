@@ -50,9 +50,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update report' }, { status: 500 })
     }
 
-    // Update user's reputation and points based on status
-    const pointsToAdd = status === 'verified' ? 50 : status === 'rejected' ? -10 : 0
-    const reputationChange = status === 'verified' ? 5 : status === 'rejected' ? -2 : 0
+    // Update user's reputation and points based on status and corroboration
+    let pointsToAdd = 0
+    let reputationChange = 0
+    if (status === 'verified') {
+      // Base points 5-40 depending on confidence
+      const base = Math.round(Math.max(5, Math.min(40, Math.floor((report.final_confidence_score || 0.5) * 50))))
+
+      // Bonus if multiple similar reports exist near the same area
+      const { data: corroborating } = await supabaseAdmin
+        .from('reports')
+        .select('id')
+        .eq('issue_category_id', report.issue_category_id)
+        .neq('id', reportId)
+        .limit(5)
+
+      const corroborationBonus = corroborating && corroborating.length >= 2 ? 20 : (corroborating && corroborating.length >= 1 ? 10 : 0)
+
+      pointsToAdd = base + corroborationBonus
+      reputationChange = Math.max(1, Math.min(10, Math.floor(pointsToAdd / 10)))
+    } else if (status === 'rejected') {
+      pointsToAdd = -10
+      reputationChange = -2
+    }
 
     if (pointsToAdd !== 0 || reputationChange !== 0) {
       // Get current user data

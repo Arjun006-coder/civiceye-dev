@@ -3,6 +3,23 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST() {
   try {
+    // First, try to create the exec_sql function if it doesn't exist
+    const createFunctionSQL = `
+      CREATE OR REPLACE FUNCTION exec_sql(sql text)
+      RETURNS void AS $$
+      BEGIN
+        EXECUTE sql;
+      END;
+      $$ LANGUAGE plpgsql SECURITY DEFINER;
+    `;
+
+    try {
+      await supabaseAdmin.rpc('exec_sql', { sql: createFunctionSQL });
+    } catch (error) {
+      // Function might already exist, that's okay
+      console.log('exec_sql function setup:', error);
+    }
+
     // Create basic tables if they don't exist
     const tables = [
       {
@@ -89,12 +106,58 @@ export async function POST() {
       }
     }
 
-    return NextResponse.json({ message: 'Database setup completed' });
+    // Ensure additional user columns exist
+    const alterUsersSQL = `
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='users' AND column_name='phone_number'
+        ) THEN
+          ALTER TABLE users ADD COLUMN phone_number TEXT;
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='users' AND column_name='bio'
+        ) THEN
+          ALTER TABLE users ADD COLUMN bio TEXT;
+        END IF;
+      END$$;
+    `;
+
+    try {
+      await supabaseAdmin.rpc('exec_sql', { sql: alterUsersSQL });
+    } catch (error) {
+      console.error('Error ensuring users extra columns:', error);
+    }
+
+    // Disable RLS for Clerk authentication
+    try {
+      await supabaseAdmin.rpc('exec_sql', { sql: 'ALTER TABLE users DISABLE ROW LEVEL SECURITY;' });
+      await supabaseAdmin.rpc('exec_sql', { sql: 'ALTER TABLE reports DISABLE ROW LEVEL SECURITY;' });
+      await supabaseAdmin.rpc('exec_sql', { sql: 'ALTER TABLE issue_categories DISABLE ROW LEVEL SECURITY;' });
+      console.log('RLS disabled successfully');
+    } catch (error) {
+      console.error('Error disabling RLS:', error);
+      // Try alternative approach
+      try {
+        await supabaseAdmin.from('users').select('id').limit(1);
+        await supabaseAdmin.from('reports').select('id').limit(1);
+        await supabaseAdmin.from('issue_categories').select('id').limit(1);
+        console.log('Tables are accessible without RLS');
+      } catch (altError) {
+        console.error('Tables still have RLS issues:', altError);
+      }
+    }
+
+    return NextResponse.json({ message: 'Database setup completed with RLS disabled for Clerk auth' });
   } catch (error) {
     console.error('Error setting up database:', error);
     return NextResponse.json({ error: 'Failed to setup database' }, { status: 500 });
   }
 }
+
+
 
 
 

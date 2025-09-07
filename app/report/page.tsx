@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Camera, Upload, Loader2, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Camera, Upload, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/use-user";
-import { AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 const ReportPage = () => {
   const router = useRouter();
@@ -31,14 +31,25 @@ const ReportPage = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  // Mock issue categories - in real app, fetch from API
-  const issueCategories = [
-    { id: '1', type: 'road_damage', description: 'Potholes, cracks, road damage' },
-    { id: '2', type: 'street_lights', description: 'Broken or malfunctioning street lights' },
-    { id: '3', type: 'traffic_lights', description: 'Traffic signal issues' },
-    { id: '4', type: 'water_drainage', description: 'Water logging, drainage problems' },
-    { id: '5', type: 'waste_pileup', description: 'Garbage collection issues' }
-  ];
+  const [issueCategories, setIssueCategories] = useState<{ id: string; description: string }[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const res = await fetch('/api/issue-categories');
+        if (!res.ok) throw new Error('Failed to load categories');
+        const data = await res.json();
+        setIssueCategories(data.categories || []);
+      } catch (e) {
+        console.error('Failed to load categories', e);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -99,15 +110,27 @@ const ReportPage = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          console.log('Location captured:', { latitude, longitude });
+          
+          // Only update coordinates, let user enter their own address
           setFormData(prev => ({
             ...prev,
-            latitude: position.coords.latitude.toString(),
-            longitude: position.coords.longitude.toString()
+            latitude: latitude.toString(),
+            longitude: longitude.toString()
           }));
+          
+          setError(null); // Clear any previous errors
         },
         (error) => {
           console.error('Error getting location:', error);
-          setError('Unable to get your location. Please enter it manually.');
+          setError('Unable to get your location. Please enter coordinates manually.');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
@@ -140,6 +163,12 @@ const ReportPage = () => {
       return;
     }
 
+    // Location is mandatory
+    if (!formData.latitude || !formData.longitude) {
+      setError('Please use "Use Current Location" button to get your coordinates.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
@@ -162,6 +191,7 @@ const ReportPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Server error:', errorData);
         if (errorData.code === 'DUPLICATE_REPORT') {
           setError(errorData.error);
           return;
@@ -169,6 +199,10 @@ const ReportPage = () => {
         throw new Error(errorData.error || 'Failed to submit report');
       }
 
+      const result = await response.json();
+      console.log('Report submitted successfully:', result);
+      
+      toast.success('Report submitted successfully!');
       setSuccess(true);
       setTimeout(() => {
         router.push('/dashboard');
@@ -176,7 +210,9 @@ const ReportPage = () => {
 
     } catch (err) {
       console.error('Error submitting report:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit report');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit report';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -326,27 +362,27 @@ const ReportPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="latitude" className="text-foreground">Latitude</Label>
+                    <Label htmlFor="latitude" className="text-foreground">Latitude (Auto-filled)</Label>
                     <Input
                       id="latitude"
                       type="number"
                       step="any"
                       value={formData.latitude}
-                      onChange={(e) => handleInputChange('latitude', e.target.value)}
-                      placeholder="e.g., 28.6139"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                      readOnly
+                      placeholder="Will be filled automatically"
+                      className="bg-white/5 border-white/20 text-white/60 placeholder:text-white/40"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="longitude" className="text-foreground">Longitude</Label>
+                    <Label htmlFor="longitude" className="text-foreground">Longitude (Auto-filled)</Label>
                     <Input
                       id="longitude"
                       type="number"
                       step="any"
                       value={formData.longitude}
-                      onChange={(e) => handleInputChange('longitude', e.target.value)}
-                      placeholder="e.g., 77.2090"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                      readOnly
+                      placeholder="Will be filled automatically"
+                      className="bg-white/5 border-white/20 text-white/60 placeholder:text-white/40"
                     />
                   </div>
                 </div>

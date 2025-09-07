@@ -74,11 +74,11 @@ const AdminDashboardContent = () => {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/dashboard');
+      const response = await fetch('/api/dashboard-mock');
       if (!response.ok) throw new Error('Failed to fetch dashboard stats');
       
       const data = await response.json();
-      setStats(data.stats);
+      setStats(data);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
