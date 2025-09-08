@@ -1,0 +1,12 @@
+PROFILE PICTURE PLACEHOLDER
+============================
+
+Please replace this file with your actual profile picture named "arjun-profile.jpg"
+
+The image should be:
+- Square format (recommended: 400x400 pixels)
+- JPG format
+- Named exactly: "arjun-profile.jpg"
+- Placed in the /public folder
+
+The team page is already configured to use this image path: "/arjun-profile.jpg"
