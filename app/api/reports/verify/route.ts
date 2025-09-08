@@ -42,7 +42,14 @@ export async function POST(request: NextRequest) {
 
     // Adjust honor points and reputation on verify only
     if (status === 'verified') {
-      await supabaseAdmin.rpc('increment_honor_and_reputation', { target_user_id: updated.user_id, honor_delta: 5, reputation_delta: 0.5 }).catch(async () => {
+      try {
+        const { error: rpcError } = await supabaseAdmin.rpc('increment_honor_and_reputation', {
+          target_user_id: updated.user_id,
+          honor_delta: 5,
+          reputation_delta: 0.5,
+        })
+        if (rpcError) throw rpcError
+      } catch {
         // Fallback if RPC not present: do direct update
         const { data: current } = await supabaseAdmin
           .from('users')
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', updated.user_id)
         }
-      })
+      }
     }
 
     return NextResponse.json({ success: true })
