@@ -155,12 +155,12 @@ export async function POST(request: NextRequest) {
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
 
-      nearbySimilarReports = nearbyReports as any
+      nearbySimilarReports = nearbyReports as { id: string; latitude?: number; longitude?: number }[]
 
       // Count within 100m radius
       const R = 6371000
       const toRad = (deg: number) => (deg * Math.PI) / 180
-      const countWithinRadius = (nearbyReports || []).reduce((count, r: any) => {
+      const countWithinRadius = (nearbyReports || []).reduce((count, r: { id: string; latitude?: number; longitude?: number }) => {
         if (r.latitude == null || r.longitude == null) return count
         const dLat = toRad((latitude as number) - r.latitude)
         const dLon = toRad((longitude as number) - r.longitude)
