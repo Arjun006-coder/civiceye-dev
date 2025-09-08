@@ -222,7 +222,7 @@ const Heatmaps = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-vibrant-orange">{stats.autoVerifiedReports}</p>
+                  <p className="text-3xl font-bold text-vibrant-orange">{stats.verifiedReports}</p>
                   <p className="text-white/80">AI confirmed</p>
                 </CardContent>
               </Card>
