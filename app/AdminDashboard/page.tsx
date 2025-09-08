@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import AdminReports from "@/components/AdminReports";
+import { Footer } from "@/components/Footer";
 
 interface DashboardStats {
   totalReports: number;
@@ -74,11 +75,11 @@ const AdminDashboardContent = () => {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/dashboard-mock');
+      const response = await fetch('/api/admin/dashboard');
       if (!response.ok) throw new Error('Failed to fetch dashboard stats');
       
       const data = await response.json();
-      setStats(data);
+      setStats(data.stats);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -205,7 +206,7 @@ const AdminDashboardContent = () => {
         >
           <Card className="glass-effect">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
+              <CardTitle className="flex items-center text-foreground drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                 <FileText className="h-5 w-5 mr-2 text-primary" />
                 Total Reports
               </CardTitle>
@@ -226,7 +227,7 @@ const AdminDashboardContent = () => {
 
           <Card className="glass-effect">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
+              <CardTitle className="flex items-center text-foreground drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                 <AlertCircle className="h-5 w-5 mr-2 text-warning" />
                 Pending
               </CardTitle>
@@ -247,7 +248,7 @@ const AdminDashboardContent = () => {
 
           <Card className="glass-effect">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
+              <CardTitle className="flex items-center text-foreground drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                 <CheckCircle className="h-5 w-5 mr-2 text-success" />
                 Verified
               </CardTitle>
@@ -268,7 +269,7 @@ const AdminDashboardContent = () => {
 
           <Card className="glass-effect">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-foreground">
+              <CardTitle className="flex items-center text-foreground drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                 <Users className="h-5 w-5 mr-2 text-accent" />
                 Active Users
               </CardTitle>
@@ -296,15 +297,15 @@ const AdminDashboardContent = () => {
         >
           <Tabs defaultValue="reports" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3 glass-effect">
-              <TabsTrigger value="reports" className="data-[state=active]:bg-primary/20">
+              <TabsTrigger value="reports" className="text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground">
                 <FileText className="h-4 w-4 mr-2" />
                 Reports
               </TabsTrigger>
-              <TabsTrigger value="municipalities" className="data-[state=active]:bg-primary/20">
+              <TabsTrigger value="municipalities" className="text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground">
                 <MapPin className="h-4 w-4 mr-2" />
                 System Management
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/20">
+              <TabsTrigger value="analytics" className="text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Analytics
               </TabsTrigger>
@@ -360,6 +361,9 @@ const AdminDashboardContent = () => {
           </Tabs>
         </motion.div>
       </main>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

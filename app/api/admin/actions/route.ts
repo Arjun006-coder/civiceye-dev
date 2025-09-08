@@ -2,30 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { auth } from '@clerk/nextjs/server'
 
+// PUBLIC: Read-only for transparency — anyone can view actions
 export async function GET() {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check if user is admin
-    const { data: user } = await supabaseAdmin
-      .from('users')
-      .select('role')
-      .eq('clerk_id', userId)
-      .single()
-
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
-
     const { data: actions, error } = await supabaseAdmin
       .from('municipality_actions')
       .select(`
-        *,
-        report:reports(*)
+        id, action_type, action_color, action_description, assigned_department,
+        estimated_completion, start_date, end_date, cost_estimate, priority_level,
+        created_at,
+        report:reports(id, title, address, issue_category:issue_categories(type))
       `)
       .order('created_at', { ascending: false })
 

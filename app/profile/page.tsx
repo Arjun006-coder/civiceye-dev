@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, Trophy, FileText, Edit3, Award, Calendar, MapPin, CheckCircle, Clock, AlertTriangle, X, Star, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -12,6 +11,7 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { useUser as useDbUser } from "@/hooks/use-user";
 import { Report } from "@/lib/supabase";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Footer } from "@/components/Footer";
 
 // Wrapper component to handle Clerk availability
 const ProfileWrapper = () => {
@@ -45,17 +45,19 @@ const ProfileContent = () => {
   const [reportsLoading, setReportsLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (dbUser) {
-      fetchUserReports();
-    }
-  }, [dbUser]);
-
   const fetchUserReports = async () => {
     try {
       setReportsLoading(true);
-      const response = await fetch('/api/user-reports-mock');
-      if (!response.ok) throw new Error('Failed to fetch reports');
+      const response = await fetch('/api/reports');
+      // If signed out or unauthorized, just stop and clear
+      if (response.status === 401) {
+        setReports([]);
+        return;
+      }
+      if (!response.ok) {
+        setReports([]);
+        return;
+      }
       
       const data = await response.json();
       // Filter to only show user's own reports
@@ -64,11 +66,19 @@ const ProfileContent = () => {
       ) || [];
       setReports(userReports);
     } catch (err) {
-      console.error('Error fetching user reports:', err);
+      // Swallow errors during sign-out/navigation races
+      console.warn('Non-fatal: Error fetching user reports:', err);
+      setReports([]);
     } finally {
       setReportsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (dbUser) {
+      fetchUserReports();
+    }
+  }, [dbUser, clerkUser?.id]);
 
   const handleSignOut = () => {
     signOut(() => router.push('/'));
@@ -265,16 +275,32 @@ const ProfileContent = () => {
 
           <Card
             className="glass-effect cursor-pointer hover:scale-105 transition-transform"
-            onClick={() => setActiveModal('resolved-reports')}
+            onClick={() => setActiveModal('verified-reports')}
           >
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
                 <CheckCircle className="h-5 w-5 mr-2 text-success" />
-                Resolved
+                Verified Reports
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-success">{userStats.resolvedReports}</p>
+              <p className="text-sm text-white/90">Successfully verified</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform"
+            onClick={() => setActiveModal('resolved-reports')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-foreground">
+                <CheckCircle className="h-5 w-5 mr-2 text-accent" />
+                Resolved
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-accent">{userStats.resolvedReports}</p>
               <p className="text-sm text-white/90">
                 {userStats.totalReports > 0 
                   ? Math.round((userStats.resolvedReports / userStats.totalReports) * 100)
@@ -465,15 +491,15 @@ const ProfileContent = () => {
             </Dialog>
           )}
 
-          {activeModal === 'resolved-reports' && (
+          {activeModal === 'verified-reports' && (
             <Dialog open={true} onOpenChange={() => setActiveModal(null)}>
               <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto glass-effect">
-                <DialogTitle className="sr-only">Resolved Reports</DialogTitle>
+                <DialogTitle className="sr-only">Verified Reports</DialogTitle>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-foreground flex items-center">
                       <CheckCircle className="mr-2 h-6 w-6 text-success" />
-                      Resolved Reports
+                      Verified Reports
                     </h2>
                     <Button variant="ghost" onClick={() => setActiveModal(null)}>
                       <X className="h-4 w-4" />
@@ -503,7 +529,56 @@ const ProfileContent = () => {
                           </div>
                           <div className="flex items-center">
                             <Star className="h-4 w-4 mr-1 text-accent" />
-                            +50 pts earned
+                            +5 pts earned
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {activeModal === 'resolved-reports' && (
+            <Dialog open={true} onOpenChange={() => setActiveModal(null)}>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto glass-effect">
+                <DialogTitle className="sr-only">Resolved Reports</DialogTitle>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-foreground flex items-center">
+                      <CheckCircle className="mr-2 h-6 w-6 text-accent" />
+                      Resolved Reports
+                    </h2>
+                    <Button variant="ghost" onClick={() => setActiveModal(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {reports.filter(report => report.verification_status === 'verified').map((report, index) => (
+                      <motion.div
+                        key={report.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="p-4 border border-accent/30 rounded-lg bg-accent/10"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-foreground">{report.title}</h3>
+                          <StatusBadge 
+                            status="verified" 
+                            type="verification" 
+                          />
+                        </div>
+                        <p className="text-sm text-white/80 mb-2">{report.description}</p>
+                        <div className="flex items-center justify-between text-sm text-white/70">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {report.address}
+                          </div>
+                          <div className="flex items-center">
+                            <Star className="h-4 w-4 mr-1 text-accent" />
+                            +5 pts earned
                           </div>
                         </div>
                       </motion.div>
@@ -550,6 +625,9 @@ const ProfileContent = () => {
           )}
         </AnimatePresence>
       </main>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

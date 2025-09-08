@@ -42,7 +42,7 @@ export default function AdminReports() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/heatmap-mock');
+      const response = await fetch('/api/reports');
       if (!response.ok) throw new Error('Failed to fetch reports');
       
       const data = await response.json();
@@ -250,9 +250,13 @@ export default function AdminReports() {
                           <div className="space-y-6">
                             {/* Report Image */}
                             {report.images && report.images.length > 0 ? (
-                              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                                <ImageIcon className="w-12 h-12 text-muted-foreground" />
-                                <span className="ml-2 text-muted-foreground">Report Image</span>
+                              <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={report.images[0]}
+                                  alt={report.title}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
                             ) : (
                               <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">

@@ -12,6 +12,7 @@ import { ArrowLeft, MapPin, Camera, Upload, Loader2, CheckCircle, AlertTriangle 
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/use-user";
 import { toast } from "sonner";
+import { Footer } from "@/components/Footer";
 
 const ReportPage = () => {
   const router = useRouter();
@@ -85,7 +86,13 @@ const ReportPage = () => {
           const data = await response.json();
           uploadedUrls.push(data.url);
         } else {
-          throw new Error(`Failed to upload ${file.name}`);
+          // Try to parse error for helpful message
+          let message = `Failed to upload ${file.name}`;
+          try {
+            const data = await response.json();
+            if (data?.error) message = data.error;
+          } catch {}
+          throw new Error(message);
         }
       }
 
@@ -521,6 +528,9 @@ const ReportPage = () => {
           </Card>
         </motion.div>
       </main>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

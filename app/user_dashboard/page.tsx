@@ -6,28 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   PlusCircle, 
   Trophy, 
-  MapPin, 
+  MapPin,
   User, 
   BarChart3,
-  FileText,
   Loader2,
-  CheckCircle,
-  Clock,
   AlertTriangle,
-  ArrowRight
+  FileText,
+  CheckCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/use-user";
 import { Report } from "@/lib/supabase";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Footer } from "@/components/Footer";
 
 const UserDashboard = () => {
   const router = useRouter();
   const { user, loading: userLoading, isAdmin } = useUser();
   const [reports, setReports] = useState<Report[]>([]);
-  const [reportsLoading, setReportsLoading] = useState(true);
-  const [reportsError, setReportsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -37,7 +33,6 @@ const UserDashboard = () => {
 
   const fetchUserReports = async () => {
     try {
-      setReportsLoading(true);
       const response = await fetch('/api/reports');
       if (!response.ok) throw new Error('Failed to fetch reports');
       
@@ -45,16 +40,13 @@ const UserDashboard = () => {
       setReports(data.reports || []);
     } catch (err) {
       console.error('Error fetching reports:', err);
-      setReportsError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setReportsLoading(false);
     }
   };
 
   // Redirect to admin dashboard if user is admin
   useEffect(() => {
     if (isAdmin) {
-      router.push('/AdminDashboard');
+      router.replace('/AdminDashboard');
     }
   }, [isAdmin, router]);
 
@@ -96,7 +88,6 @@ const UserDashboard = () => {
     honorPoints: user?.honor_score_points || 0
   };
 
-  const recentReports = reports.slice(0, 5);
 
   if (userLoading) {
     return (
@@ -206,91 +197,69 @@ const UserDashboard = () => {
           ))}
         </motion.div>
 
-        {/* Recent Reports */}
+        {/* Activity Summary Cards */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+        >
+          <Card className="glass-effect hover:bg-white/10 transition-colors">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-primary mb-2">{userStats.totalReports}</div>
+              <p className="text-white/80">Total Reports</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect hover:bg-white/10 transition-colors">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-700 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-success mb-2">{userStats.verifiedReports}</div>
+              <p className="text-white/80">Verified Reports</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect hover:bg-white/10 transition-colors">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-700 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Trophy className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-accent mb-2">{userStats.honorPoints}</div>
+              <p className="text-white/80">Honor Points</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* View Profile Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="text-center"
         >
           <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="text-xl text-foreground">Your Recent Reports</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {reportsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-                  <span className="text-white/80">Loading reports...</span>
-                </div>
-              ) : reportsError ? (
-                <div className="text-center py-8">
-                  <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-                  <p className="text-red-400">Error loading reports: {reportsError}</p>
-                </div>
-              ) : recentReports.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-white/80 mb-4">You haven&apos;t submitted any reports yet.</p>
-                  <Button onClick={() => router.push("/report")} className="bg-gradient-primary">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Submit Your First Report
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentReports.map((report, index) => (
-                    <motion.div
-                      key={report.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.7 + index * 0.1, duration: 0.4 }}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold text-foreground">{report.title}</h3>
-                          <StatusBadge 
-                            status={report.verification_status} 
-                            type="verification" 
-                          />
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-white/70">
-                          <div className="flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {report.address}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {new Date(report.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-white/70">
-                          {report.issue_category?.type || 'Unknown'}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                  
-                  {reports.length > 5 && (
-                    <div className="text-center pt-4">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => router.push("/profile")}
-                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                      >
-                        View All Reports
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
+            <CardContent className="p-8">
+              <h3 className="text-xl font-semibold text-foreground mb-4">Want to see more details?</h3>
+              <p className="text-white/80 mb-6">View your complete profile, report history, and achievements.</p>
+              <Button 
+                onClick={() => router.push("/profile")}
+                className="bg-gradient-primary hover:opacity-90 text-primary-foreground px-8 py-3"
+              >
+                <User className="h-5 w-5 mr-2" />
+                View Full Profile & Reports
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
       </main>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

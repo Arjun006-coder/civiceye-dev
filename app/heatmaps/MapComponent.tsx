@@ -48,56 +48,87 @@ function HeatmapLayer({ reports }: { reports: Report[] }) {
   useEffect(() => {
     if (reports.length === 0) return;
 
-    // Create heatmap data
-    const heatmapData = reports
-      .filter(report => report.latitude && report.longitude)
-      .map(report => ({
-        lat: report.latitude,
-        lng: report.longitude,
-        weight: (report.final_confidence_score || 0.5) * 100, // Convert to 0-100 scale
-        report: report
-      }));
+    // Haversine distance (meters)
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const distanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
 
-    // Create custom heatmap layer
-    const heatmapLayer = L.layerGroup();
+    const points = reports.filter(r => r.latitude && r.longitude);
 
-    heatmapData.forEach(point => {
-      const intensity = point.weight / 100;
-      let color = '#00ff00'; // Green
-      
-      if (intensity >= 0.8) color = '#ff0000'; // Red
-      else if (intensity >= 0.6) color = '#ff8000'; // Orange
-      else if (intensity >= 0.4) color = '#ffff00'; // Yellow
-      else if (intensity >= 0.2) color = '#80ff00'; // Light Green
+    // Cluster points by 500m radius
+    const visited: boolean[] = new Array(points.length).fill(false);
+    type Cluster = { lat: number; lng: number; count: number; members: Report[] };
+    const clusters: Cluster[] = [];
 
-      const marker = L.circleMarker([point.lat, point.lng], {
-        radius: Math.max(5, intensity * 15),
-        fillColor: color,
-        color: '#000',
-        weight: 1,
-        opacity: 0.8,
-        fillOpacity: 0.6
+    for (let i = 0; i < points.length; i++) {
+      if (visited[i]) continue;
+      const center = points[i];
+      let latSum = center.latitude;
+      let lngSum = center.longitude;
+      let count = 1;
+      const members: Report[] = [center];
+      visited[i] = true;
+
+      for (let j = i + 1; j < points.length; j++) {
+        if (visited[j]) continue;
+        const p = points[j];
+        const d = distanceMeters(center.latitude, center.longitude, p.latitude, p.longitude);
+        if (d <= 500) {
+          visited[j] = true;
+          latSum += p.latitude;
+          lngSum += p.longitude;
+          count += 1;
+          members.push(p);
+        }
+      }
+
+      const clusterCenterLat = latSum / count;
+      const clusterCenterLng = lngSum / count;
+      clusters.push({ lat: clusterCenterLat, lng: clusterCenterLng, count, members });
+    }
+
+    // Draw translucent circles of 500m radius with color thresholds
+    const layer = L.layerGroup();
+    clusters.forEach(c => {
+      // thresholds based on count
+      let fill = '#22c55e'; // green
+      if (c.count >= 9) fill = '#ef4444'; // red
+      else if (c.count >= 4) fill = '#f59e0b'; // yellow/orange
+      else if (c.count >= 2) fill = '#22c55e'; // green
+      else fill = '#3b82f6'; // blue for isolated
+
+      const circle = L.circle([c.lat, c.lng], {
+        radius: 500,
+        color: fill,
+        fillColor: fill,
+        weight: 2,
+        opacity: 0.5,
+        fillOpacity: 0.2 // translucent
       });
 
-      // Add popup with report details
-      marker.bindPopup(`
+      circle.bindPopup(`
         <div class="p-2">
-          <h3 class="font-bold text-sm mb-1">${point.report.title}</h3>
-          <p class="text-xs text-gray-600 mb-1">${point.report.address}</p>
-          <p class="text-xs mb-1">Status: <span class="font-semibold">${point.report.verification_status}</span></p>
-          <p class="text-xs">Confidence: <span class="font-semibold">${Math.round(point.weight)}%</span></p>
+          <h3 class="font-bold text-sm mb-1">Cluster</h3>
+          <p class="text-xs">Reports in 500m: <span class="font-semibold">${c.count}</span></p>
         </div>
       `);
 
-      heatmapLayer.addLayer(marker);
+      layer.addLayer(circle);
     });
 
-    // Add heatmap layer to map
-    heatmapLayer.addTo(map);
+    layer.addTo(map);
 
     // Cleanup function
     return () => {
-      map.removeLayer(heatmapLayer);
+      map.removeLayer(layer);
     };
   }, [reports, map]);
 

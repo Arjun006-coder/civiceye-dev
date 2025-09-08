@@ -37,17 +37,46 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const fileBuffer = await file.arrayBuffer();
 
-    // Upload to Supabase Storage
-    const { error } = await supabaseAdmin.storage
-      .from('report-images')
-      .upload(filePath, fileBuffer, {
-        contentType: file.type,
-        upsert: false
-      });
+    // Ensure bucket exists (create if missing) and upload
+    const ensureBucket = async (): Promise<void> => {
+      try {
+        const { data: buckets } = await supabaseAdmin.storage.listBuckets()
+        const exists = (buckets || []).some((b: { name: string }) => b.name === 'report-images')
+        if (!exists) {
+          await supabaseAdmin.storage.createBucket('report-images', {
+            public: true,
+            fileSizeLimit: 10 * 1024 * 1024,
+            allowedMimeTypes: ['image/*']
+          })
+        }
+      } catch (e) {
+        // Non-fatal: continue to upload attempt
+        console.warn('Bucket check/create failed (continuing):', e)
+      }
+    }
+
+    await ensureBucket()
+
+    const attemptUpload = async () => {
+      return await supabaseAdmin.storage
+        .from('report-images')
+        .upload(filePath, fileBuffer, {
+          contentType: file.type,
+          upsert: false
+        })
+    }
+
+    let { error } = await attemptUpload()
+    if (error) {
+      console.warn('Initial upload failed, retrying once...', error)
+      await ensureBucket()
+      const retry = await attemptUpload()
+      error = retry.error
+    }
 
     if (error) {
-      console.error('Error uploading to Supabase:', error);
-      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+      console.error('Error uploading to Supabase:', error)
+      return NextResponse.json({ error: error.message || 'Failed to upload file' }, { status: 500 })
     }
 
     // Get public URL

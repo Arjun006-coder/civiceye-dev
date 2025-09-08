@@ -8,6 +8,7 @@ import { ArrowLeft, Trophy, Medal, Award, Crown, Loader2, AlertTriangle } from "
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LeaderboardEntry } from "@/lib/supabase";
+import { Footer } from "@/components/Footer";
 
 const Leaderboard = () => {
   const router = useRouter();
@@ -22,7 +23,7 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/leaderboard-mock');
+      const response = await fetch('/api/leaderboard');
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       
       const data = await response.json();
@@ -204,7 +205,7 @@ const Leaderboard = () => {
               <CardContent className="p-6 text-center">
                 <Award className="h-8 w-8 text-green-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-vibrant-green">
-                  {leaderboard.reduce((sum, entry) => sum + entry.verified_reports, 0)}
+                  {leaderboard.reduce((sum, entry) => sum + (Number(entry.verified_reports) || 0), 0)}
                 </p>
                 <p className="text-white/90 font-medium">Total Verified Reports</p>
               </CardContent>
@@ -214,7 +215,7 @@ const Leaderboard = () => {
               <CardContent className="p-6 text-center">
                 <Medal className="h-8 w-8 text-blue-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-vibrant-blue">
-                  {leaderboard.reduce((sum, entry) => sum + entry.total_points, 0)}
+                  {leaderboard.reduce((sum, entry) => sum + (Number(entry.total_points) || 0), 0)}
                 </p>
                 <p className="text-white/90 font-medium">Total Points Earned</p>
               </CardContent>
@@ -222,6 +223,9 @@ const Leaderboard = () => {
           </motion.div>
         )}
       </main>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

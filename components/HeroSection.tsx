@@ -56,7 +56,7 @@ export const HeroSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.6 }}
-            className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto"
+            className="text-xl md:text-2xl text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] max-w-2xl mx-auto"
           >
             Empowering communities through transparent civic engagement
           </motion.p>

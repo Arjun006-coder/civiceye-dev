@@ -34,7 +34,7 @@ const Heatmaps = () => {
   const fetchHeatmapData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/heatmap-mock');
+      const response = await fetch('/api/heatmap');
       if (!response.ok) throw new Error('Failed to fetch heatmap data');
       
       const data = await response.json();
@@ -89,13 +89,15 @@ const Heatmaps = () => {
     return "Very Low";
   };
 
+  // Consider only verified reports for stats
+  const verifiedOnly = reports.filter(r => r.verification_status === 'verified');
   const stats = {
-    totalReports: reports.length,
-    verifiedReports: reports.filter(r => r.verification_status === 'verified').length,
+    totalReports: verifiedOnly.length,
+    verifiedReports: verifiedOnly.length,
     underReviewReports: reports.filter(r => r.verification_status === 'under_review').length,
     pendingReports: reports.filter(r => r.verification_status === 'pending').length,
-    avgConfidence: reports.length > 0 
-      ? reports.reduce((sum, r) => sum + (r.final_confidence_score || 0), 0) / reports.length 
+    avgConfidence: verifiedOnly.length > 0 
+      ? verifiedOnly.reduce((sum, r) => sum + (r.final_confidence_score || 0), 0) / verifiedOnly.length 
       : 0
   };
 

@@ -113,11 +113,17 @@ export function useUser() {
     syncUser()
   }, [isClerkAvailable, clerkData.user, clerkData.isLoaded])
 
+  // Fallback admin detection by email (useful if DB role not synced yet)
+  const fallbackAdmin = ((): boolean => {
+    const adminEmail = 'arjun1234agrawal@gmail.com'
+    return Boolean(user?.email && user.email.toLowerCase() === adminEmail)
+  })()
+
   return {
     user,
     loading,
     error,
-    isAdmin: user?.role === 'admin',
+    isAdmin: user?.role === 'admin' || fallbackAdmin,
     isLoaded: isClerkAvailable ? (clerkData.isLoaded && !loading) : true
   }
 }

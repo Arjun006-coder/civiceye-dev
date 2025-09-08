@@ -23,7 +23,7 @@ export function ConfidenceScore({ score, className, showLabel = true }: Confiden
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {showLabel && <span className="text-sm text-gray-600">Confidence:</span>}
+      {showLabel && <span className="text-sm text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">Confidence:</span>}
       <div className={cn(
         "px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1",
         getScoreColor(score)
