@@ -31,6 +31,7 @@ const ReportPage = () => {
   const [success, setSuccess] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [locating, setLocating] = useState(false);
 
   const [issueCategories, setIssueCategories] = useState<{ id: string; description: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -113,35 +114,54 @@ const ReportPage = () => {
     }));
   };
 
-  const handleLocationClick = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          console.log('Location captured:', { latitude, longitude });
-          
-          // Only update coordinates, let user enter their own address
-          setFormData(prev => ({
-            ...prev,
-            latitude: latitude.toString(),
-            longitude: longitude.toString()
-          }));
-          
-          setError(null); // Clear any previous errors
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setError('Unable to get your location. Please enter coordinates manually.');
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+  const handleLocationClick = async () => {
+    try {
+      setLocating(true);
+      setError(null);
+      if (!('geolocation' in navigator)) {
+        setError('Geolocation is not supported by this browser.');
+        return;
+      }
+
+      // Optional: hint permission state for better UX
+      try {
+        if (navigator.permissions?.query) {
+          const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          if (status.state === 'denied') {
+            setError('Location permission denied. Please allow access to get precise coordinates.');
+            return;
+          }
         }
-      );
-    } else {
-      setError('Geolocation is not supported by this browser.');
+      } catch {}
+      const takeOne = () => new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0
+        });
+      });
+
+      const samples: { lat: number; lng: number; acc: number }[] = [];
+      for (let i = 0; i < 3; i++) {
+        const pos = await takeOne();
+        samples.push({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          acc: typeof pos.coords.accuracy === 'number' ? pos.coords.accuracy : Number.POSITIVE_INFINITY
+        });
+        // small delay between samples to allow GPS to refine
+        if (i < 2) await new Promise(r => setTimeout(r, 1000));
+      }
+
+      // pick the sample with the lowest reported accuracy (meters)
+      const best = samples.reduce((a, b) => (b.acc < a.acc ? b : a));
+      setFormData(prev => ({
+        ...prev,
+        latitude: best.lat.toString(),
+        longitude: best.lng.toString()
+      }));
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -402,7 +422,7 @@ const ReportPage = () => {
                     className="glass-effect hover:bg-primary/20 border-white/20 text-white"
                   >
                     <MapPin className="h-4 w-4 mr-2" />
-                    Use Current Location
+                    {locating ? 'Getting precise location…' : 'Use Current Location'}
                   </Button>
                 </div>
 

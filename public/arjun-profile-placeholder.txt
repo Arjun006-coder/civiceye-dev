@@ -10,3 +10,4 @@ The image should be:
 - Placed in the /public folder
 
 The team page is already configured to use this image path: "/arjun-profile.jpg"
+

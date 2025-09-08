@@ -105,6 +105,26 @@ export default function AdminReports() {
     }
   };
 
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      const confirmed = window.confirm('Delete this report permanently? This cannot be undone.');
+      if (!confirmed) return;
+
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete report');
+      }
+
+      await fetchReports();
+      setSelectedReport(null);
+    } catch (err) {
+      console.error('Error deleting report:', err);
+    }
+  };
+
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          report.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -346,6 +366,24 @@ export default function AdminReports() {
                                 >
                                   <XCircle className="w-4 h-4 mr-2" />
                                   Reject Report
+                                </Button>
+                                <Button 
+                                  variant="destructive"
+                                  onClick={() => handleDeleteReport(report.id)}
+                                  className="bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700"
+                                >
+                                  Delete Report
+                                </Button>
+                              </div>
+                            )}
+                            {report.verification_status !== "pending" && (
+                              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border/50">
+                                <Button 
+                                  variant="destructive"
+                                  onClick={() => handleDeleteReport(report.id)}
+                                  className="bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700"
+                                >
+                                  Delete Report
                                 </Button>
                               </div>
                             )}

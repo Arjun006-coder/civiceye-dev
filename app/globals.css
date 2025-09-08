@@ -146,9 +146,11 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 0 40px rgba(255, 255, 255, 0.8);
-  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.55);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.25));
 }
+
+/* removed animated glow per request */
 
 .civic-card {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
@@ -302,3 +304,5 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* removed silky waves overlay per request */

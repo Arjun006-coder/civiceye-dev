@@ -32,32 +32,32 @@ const teamMembers = [
     }
   },
   {
-    name: "Michael Torres",
+    name: "Suraj Verma",
     role: "Community Manager",
-    bio: "Bridges the gap between technology and community needs through engagement and outreach.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
-    social: { github: "#", linkedin: "#", email: "michael@civic-eye.com" }
+    bio: "IT Department, KIET Group of Institutions. Facilitates collaboration, organizes outreach, and keeps communication flowing between teams and the community.",
+    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop&crop=face",
+    social: { github: "#", linkedin: "#", email: "suraj.verma@kiet.edu" }
   },
   {
-    name: "Emily Rodriguez",
-    role: "Data Analyst",
-    bio: "Transforms civic data into actionable insights that drive community improvements.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
-    social: { github: "#", linkedin: "#", email: "emily@civic-eye.com" }
-  },
-  {
-    name: "David Kim",
-    role: "Backend Developer",
-    bio: "Specializes in scalable server architecture and database optimization for civic platforms.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
-    social: { github: "#", linkedin: "#", email: "david@civic-eye.com" }
-  },
-  {
-    name: "Lisa Wang",
+    name: "Aditya Kumar",
     role: "Frontend Developer",
-    bio: "Creates responsive and accessible user interfaces that work seamlessly across all devices.",
-    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face",
-    social: { github: "#", linkedin: "#", email: "lisa@civic-eye.com" }
+    bio: "EEE Department, KIET Group of Institutions. Focused on systems, energy basics, and getting things done — this is just formality, no one knows anything but we ship.",
+    image: "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=400&h=400&fit=crop&crop=face",
+    social: { github: "#", linkedin: "#", email: "aditya.kumar@kiet.edu" }
+  },
+  {
+    name: "Priyanshu Tomar",
+    role: "Backend Developer",
+    bio: "CSE Department, KIET Group of Institutions. Builds reliable APIs, optimizes databases, and keeps the server-side clean and scalable.",
+    image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop&crop=face",
+    social: { github: "#", linkedin: "#", email: "priyanshu.tomar@kiet.edu" }
+  },
+  {
+    name: "Achal",
+    role: "Data Analyst",
+    bio: "EEE Department, KIET Group of Institutions. Turns raw data into simple dashboards and insights everyone can use.",
+    image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=400&h=400&fit=crop&crop=face",
+    social: { github: "#", linkedin: "#", email: "achal@kiet.edu" }
   }
 ];
 
