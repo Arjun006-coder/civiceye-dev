@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth()
@@ -23,7 +23,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const reportId = params.id
+    const { id: reportId } = await context.params
     if (!reportId) {
       return NextResponse.json({ error: 'Missing report id' }, { status: 400 })
     }

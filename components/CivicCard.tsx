@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { LucideIcon, ClipboardCheck, TrendingUp, MessageSquare, Building2 } from "lucide-react";
+import { LucideIcon, ClipboardCheck, TrendingUp, MessageSquare, Building2, Building } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -20,6 +20,7 @@ const iconMap: Record<string, LucideIcon> = {
   TrendingUp,
   MessageSquare,
   Building2,
+  Building,
 };
 
 const getImageForTitle = (title: string) => {
@@ -32,7 +33,7 @@ const getImageForTitle = (title: string) => {
     case "Community Forums":
       return "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=800&h=600&fit=crop&crop=center";
     case "City Services":
-      return "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?w=800&h=600&fit=crop&crop=center";
+      return "https://images.unsplash.com/photo-1494526585095-c41746248156?w=800&h=600&fit=crop&crop=center";
     default:
       return "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop&crop=center";
   }

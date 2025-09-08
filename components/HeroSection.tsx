@@ -24,7 +24,7 @@ const civicFeatures = [
   {
     title: "City Services",
     description: "Access municipal services and information",
-    icon: "Building2",
+    icon: "Building",
   },
 ];
 
