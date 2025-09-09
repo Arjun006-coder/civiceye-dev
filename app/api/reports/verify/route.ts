@@ -114,15 +114,16 @@ export async function POST(request: NextRequest) {
 
     // Adjust honor points and reputation on verify only
     if (status === 'verified') {
+      // Always give +5 honor points
       try {
         const { error: rpcError } = await supabaseAdmin.rpc('increment_honor_and_reputation', {
           target_user_id: updated.user_id,
           honor_delta: 5,
-          reputation_delta: 0.5,
+          reputation_delta: 0, // We'll handle reputation separately
         })
         if (rpcError) throw rpcError
       } catch {
-        // Fallback if RPC not present: do direct update
+        // Fallback if RPC not present: do direct update for honor points
         const { data: current, error: currentErr } = await supabaseAdmin
           .from('users')
           .select('honor_score_points, reputation')
@@ -133,14 +134,53 @@ export async function POST(request: NextRequest) {
             .from('users')
             .update({
               honor_score_points: (current.honor_score_points || 0) + 5,
-              reputation: (current.reputation || 0) + 0.5,
             })
             .eq('id', updated.user_id)
           if (updErr) {
-            console.error('User increment fallback failed:', updErr)
+            console.error('User honor increment fallback failed:', updErr)
           }
         } else if (currentErr) {
-          console.error('User fetch for increment failed:', currentErr)
+          console.error('User fetch for honor increment failed:', currentErr)
+        }
+      }
+
+      // Check if user should get +5 reputation (every 3 verified reports)
+      const { data: userReports } = await supabaseAdmin
+        .from('reports')
+        .select('verification_status')
+        .eq('user_id', updated.user_id)
+
+      const verifiedCount = userReports?.filter(r => r.verification_status === 'verified').length || 0
+      
+      // Give +5 reputation every 3 verified reports (3rd, 6th, 9th, etc.)
+      if (verifiedCount % 3 === 0 && verifiedCount > 0) {
+        try {
+          const { error: repError } = await supabaseAdmin.rpc('increment_honor_and_reputation', {
+            target_user_id: updated.user_id,
+            honor_delta: 0,
+            reputation_delta: 5,
+          })
+          if (repError) throw repError
+        } catch {
+          // Fallback for reputation
+          const { data: current, error: currentErr } = await supabaseAdmin
+            .from('users')
+            .select('reputation')
+            .eq('id', updated.user_id)
+            .single()
+          if (current) {
+            const { error: updErr } = await supabaseAdmin
+              .from('users')
+              .update({
+                reputation: (current.reputation || 0) + 5,
+              })
+              .eq('id', updated.user_id)
+            if (updErr) {
+              console.error('User reputation increment fallback failed:', updErr)
+            }
+          } else if (currentErr) {
+            console.error('User fetch for reputation increment failed:', currentErr)
+          }
         }
       }
 
