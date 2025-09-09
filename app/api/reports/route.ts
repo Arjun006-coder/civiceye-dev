@@ -241,21 +241,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create report', details: error }, { status: 500 })
     }
 
-    // Update user's report count - get current points first
-    const { data: currentUser } = await supabaseAdmin
-      .from('users')
-      .select('honor_score_points')
-      .eq('id', user.id)
-      .single()
-    
-    if (currentUser) {
-      await supabaseAdmin
-        .from('users')
-        .update({
-          honor_score_points: currentUser.honor_score_points + 5
-        })
-        .eq('id', user.id)
-    }
+    // Do not add honor points on submission. Points are awarded only on verification.
 
     console.log('=== REPORT SUBMISSION SUCCESS ===');
     return NextResponse.json({ report, message: 'Report created successfully' })
