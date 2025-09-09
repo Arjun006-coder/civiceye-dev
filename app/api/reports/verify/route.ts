@@ -123,19 +123,24 @@ export async function POST(request: NextRequest) {
         if (rpcError) throw rpcError
       } catch {
         // Fallback if RPC not present: do direct update
-        const { data: current } = await supabaseAdmin
+        const { data: current, error: currentErr } = await supabaseAdmin
           .from('users')
           .select('honor_score_points, reputation')
           .eq('id', updated.user_id)
           .single()
         if (current) {
-          await supabaseAdmin
+          const { error: updErr } = await supabaseAdmin
             .from('users')
             .update({
               honor_score_points: (current.honor_score_points || 0) + 5,
               reputation: (current.reputation || 0) + 0.5,
             })
             .eq('id', updated.user_id)
+          if (updErr) {
+            console.error('User increment fallback failed:', updErr)
+          }
+        } else if (currentErr) {
+          console.error('User fetch for increment failed:', currentErr)
         }
       }
 
@@ -148,7 +153,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true })
+    // Return updated user snapshot for clients to reflect changes immediately
+    const { data: updatedUser } = await supabaseAdmin
+      .from('users')
+      .select('id, honor_score_points, reputation')
+      .eq('id', updated.user_id)
+      .single()
+
+    return NextResponse.json({ success: true, user: updatedUser })
   } catch (err) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

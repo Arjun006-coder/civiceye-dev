@@ -1,0 +1,123 @@
+CivicEye – Detailed Tech and Code Walkthrough (Frontend + Backend)
+
+1) High-level Architecture
+- App framework: Next.js 15 (App Router)
+- Language: TypeScript throughout
+- Hosting: Vercel
+- Auth: Clerk (server: @clerk/nextjs/server, client: @clerk/nextjs)
+- Database + backend services: Supabase (PostgreSQL + RPC)
+- Styling: Tailwind CSS + custom utilities (glass-effect, gradient-bg) + shadcn/ui primitives
+- Animations: framer-motion
+- Icons: lucide-react
+- Data access pattern: Serverless API routes in /app/api/* calling Supabase (admin or RLS client)
+
+2) Frontend – Pages, Components, and How They Connect
+A. App shell and providers
+- app/layout.tsx: global metadata, font, global wrappers, Tailwind CSS import (app/globals.css)
+- app/providers.tsx: hooks/providers for client-side context (e.g., toasts)
+- middleware.ts: integrates Clerk session at the edge
+
+B. Entry, Navigation, Common
+- components/common/NavBar.tsx: navigation
+- components/Footer.tsx: global footer
+- components/HeroSection.tsx: hero visuals
+
+C. Authentication and Onboarding
+- app/sign-in, app/sign-up: Clerk routes
+- hooks/use-user.ts: client hook that syncs Clerk user into DB via /api/auth/sync-user and exposes { user, isAdmin, isLoaded }
+
+D. User Flows (major pages)
+1) User Dashboard – app/user_dashboard/page.tsx
+   - Purpose: quick actions (Add Report, Leaderboard, Official Actions, Heatmaps)
+   - Components: shadcn Card/Button, lucide icons, framer-motion
+   - Stats cards removed (UX): avoids confusion with global totals
+
+2) Profile – app/profile/page.tsx
+   - Data: DB user (honor_score_points, reputation) + /api/reports filtered to current Clerk user
+   - UI: profile header; colorful stats cards (Honor Points, Total Reports, Verified Reports, Success Rate, Reputation, Achievements)
+   - Each card opens a Dialog with detailed lists; Recent Reports section uses StatusBadge and metadata
+
+3) Leaderboard – app/leaderboard/page.tsx
+   - Fetches /api/leaderboard
+   - Shows top 10 (non-admins, users with ≥1 report) sorted by points, tie-broken by name
+   - If user not top 10 or has no reports, a “You” row is rendered near top with rank or NA
+
+4) Admin Dashboard – app/AdminDashboard/page.tsx
+   - Guards: Clerk + DB role
+   - Tabs: Reports (mounts AdminReports), System Management (Populate Leaderboard), Analytics (placeholder)
+   - Stats from /api/admin/dashboard
+
+E. Key UI blocks
+- components/ui/*: shadcn primitives (Button, Card, Dialog, Tabs, Badge, StatusBadge, ConfidenceScore)
+- Motion via framer-motion; icons via lucide-react
+- Utilities: gradient-bg, glass-effect, floating-blob
+
+F. AdminReports – components/AdminReports.tsx
+- Report list with search/status filter
+- “View Details” opens translucent dark bluish/greyish gradient Dialog (backdrop blur)
+  • Left: Report Information (Issue, Location, Reporter info)
+  • Right: Status & Confidence (StatusBadge, ConfidenceScore)
+  • Actions: Verify, Reject, Delete
+- REST calls: /api/reports, /api/reports/verify, /api/reports/[id]
+
+3) Backend – API Routes and Data Flow
+A. Supabase – lib/supabase.ts
+- supabase (RLS client), supabaseAdmin (service role) and typed interfaces
+- Helpers for colors/badges
+
+B. Auth/User sync – app/api/auth/sync-user/route.ts
+- GET: fetch DB user for current Clerk user
+- POST: create/update DB user with defaults
+  • honor_score_points = 0, reputation = 10, role = 'user' (admin for specific email)
+
+C. Reports – app/api/reports/route.ts
+- GET: returns reports; for user role, shows verified + own
+- POST: create report; computes confidence (base + reputation bonus + nearby corroboration)
+- No honor points granted on creation (prevents gaming)
+
+D. Verify/Reject – app/api/reports/verify/route.ts
+- Admin-only
+- On verified: +5 honor_score_points and +0.5 reputation to the report owner (RPC or fallback update)
+
+E. Leaderboard – app/api/leaderboard/route.ts
+- Excludes admins; includes users with ≥1 report
+- Sorts by points desc, then full_name asc
+- Returns top 10 and myRank for current user
+
+F. Leaderboard populate – app/api/leaderboard/populate/route.ts
+- Admin tool to seed/update leaderboard table from users+reports
+
+G. Admin Dashboard Stats – app/api/admin/dashboard/route.ts
+- Totals (reports/users) and averages (confidence)
+
+4) Honor Points and Reputation Rules
+- New user: honor_score_points = 0, reputation = 10
+- On report submission: no change
+- On verification: +5 honor points, +0.5 reputation
+
+5) Security and Access
+- Clerk auth checked server-side via auth(); admin enforced by users.role === 'admin'
+- /api/reports GET enforces user visibility (verified + own)
+
+6) File Map (quick reference)
+Frontend
+- app/user_dashboard/page.tsx – actions hub
+- app/profile/page.tsx – profile + stats + modals + recent
+- app/leaderboard/page.tsx – leaderboard list + myRank row
+- app/AdminDashboard/page.tsx – admin portal
+- components/AdminReports.tsx – admin list + detail dialog
+- components/ui/* – UI primitives
+
+Backend
+- app/api/auth/sync-user/route.ts – DB user sync
+- app/api/reports/route.ts – list/create reports
+- app/api/reports/verify/route.ts – verify/reject (+points/+rep)
+- app/api/leaderboard/route.ts – computed leaderboard
+- app/api/leaderboard/populate/route.ts – admin seed
+- app/api/admin/dashboard/route.ts – stats
+
+7) Deployment Notes
+- On Vercel redeploys with major style changes, clear build cache, then hard refresh or use incognito
+- ESLint/type errors fail builds; warnings can be cleaned progressively
+
+This document explains technologies, each module’s responsibility, and how data flows end‑to‑end so you can present “who built what and how it connects.”
