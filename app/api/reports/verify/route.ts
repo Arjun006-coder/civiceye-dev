@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check if user should get +5 reputation (every 3 verified reports)
+      // Check if user should get +5 reputation (every 5 verified reports)
       const { data: userReports } = await supabaseAdmin
         .from('reports')
         .select('verification_status')
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
 
       const verifiedCount = userReports?.filter(r => r.verification_status === 'verified').length || 0
       
-      // Give +5 reputation every 3 verified reports (3rd, 6th, 9th, etc.)
-      if (verifiedCount % 3 === 0 && verifiedCount > 0) {
+      // Give +5 reputation every 5 verified reports (5th, 10th, 15th, etc.)
+      if (verifiedCount % 5 === 0 && verifiedCount > 0) {
         try {
           const { error: repError } = await supabaseAdmin.rpc('increment_honor_and_reputation', {
             target_user_id: updated.user_id,
