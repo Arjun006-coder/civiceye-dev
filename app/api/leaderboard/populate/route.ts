@@ -36,9 +36,17 @@ export async function POST() {
     await supabaseAdmin.from('leaderboard').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
     // Prepare leaderboard entries
-    const leaderboardEntries = users.map(user => {
+    type ReportRow = { id: string; verification_status: 'pending' | 'verified' | 'rejected' | 'under_review' };
+    type UserWithReports = {
+      id: string;
+      honor_score_points: number | null;
+      reputation: number | null;
+      reports?: ReportRow[] | null;
+    };
+
+    const leaderboardEntries = (users as unknown as UserWithReports[]).map((user) => {
       const totalReports = user.reports?.length || 0
-      const verifiedReports = user.reports?.filter((r: any) => r.verification_status === 'verified').length || 0
+      const verifiedReports = user.reports?.filter((r) => r.verification_status === 'verified').length || 0
       
       return {
         user_id: user.id,

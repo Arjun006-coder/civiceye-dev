@@ -26,11 +26,22 @@ export async function GET() {
     }
 
     // Build ranking list: exclude admins and users with zero reports
-    const ranked = (users || [])
+    type ReportRow = { id: string; verification_status: 'pending' | 'verified' | 'rejected' | 'under_review' };
+    type UserRow = {
+      id: string;
+      clerk_id: string;
+      full_name: string | null;
+      email: string | null;
+      honor_score_points: number | null;
+      role: string;
+      reports?: ReportRow[] | null;
+    };
+
+    const ranked = ((users || []) as unknown as UserRow[])
       .filter(u => u.role !== 'admin')
       .map(u => {
         const reportsSubmitted = u.reports?.length || 0
-        const verifiedReports = (u.reports || []).filter((r: any) => r.verification_status === 'verified').length
+        const verifiedReports = (u.reports || []).filter((r) => r.verification_status === 'verified').length
         return {
           id: u.id,
           user: {
