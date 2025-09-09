@@ -197,43 +197,7 @@ const UserDashboard = () => {
           ))}
         </motion.div>
 
-        {/* Activity Summary Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-        >
-          <Card className="glass-effect hover:bg-white/10 transition-colors">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-primary mb-2">{userStats.totalReports}</div>
-              <p className="text-white/80">Total Reports</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-effect hover:bg-white/10 transition-colors">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-700 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-success mb-2">{userStats.verifiedReports}</div>
-              <p className="text-white/80">Verified Reports</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-effect hover:bg-white/10 transition-colors">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-700 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Trophy className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-accent mb-2">{userStats.honorPoints}</div>
-              <p className="text-white/80">Honor Points</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Activity Summary Cards removed per UX feedback */}
 
         {/* View Profile Button */}
         <motion.div

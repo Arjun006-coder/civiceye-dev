@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           full_name: fullName,
           profile_pic_url: profilePicUrl,
           role: email === 'arjun1234agrawal@gmail.com' ? 'admin' : 'user',
-          honor_score_points: 10,
+          honor_score_points: 0,
           reputation: 10,
           is_active: true
         })

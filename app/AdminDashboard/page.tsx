@@ -17,7 +17,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Loader2
+  Loader2,
+  Trophy
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -175,19 +176,19 @@ const AdminDashboardContent = () => {
       <div className="floating-blob"></div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-6">
+      <header className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 gap-4">
         <div className="flex items-center">
-          <h1 className="text-3xl font-bold hero-text">Admin Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold hero-text">Admin Dashboard</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-white/90 font-medium">{user.fullName || user.emailAddresses[0]?.emailAddress}</p>
-            <p className="text-white/70 text-sm">Administrator</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+          <div className="text-left sm:text-right">
+            <p className="text-white/90 font-medium text-sm sm:text-base">{user.fullName || user.emailAddresses[0]?.emailAddress}</p>
+            <p className="text-white/70 text-xs sm:text-sm">Administrator</p>
           </div>
           <Button 
             onClick={handleSignOut}
             variant="outline" 
-            className="glass-effect hover:bg-red-500/20 border-red-400/50 text-red-400 hover:text-red-300"
+            className="glass-effect hover:bg-red-500/20 border-red-400/50 text-red-400 hover:text-red-300 w-full sm:w-auto"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
@@ -196,13 +197,13 @@ const AdminDashboardContent = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Stats Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
         >
           <Card className="glass-effect">
             <CardHeader className="pb-2">
@@ -321,24 +322,53 @@ const AdminDashboardContent = () => {
                   <CardTitle className="text-foreground">System Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {quickActions.map((action) => (
-                      <motion.div
-                        key={action.title}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                  <div className="space-y-6">
+                    {/* Leaderboard Management */}
+                    <div className="p-4 border border-primary/30 rounded-lg bg-primary/10">
+                      <h3 className="text-lg font-semibold text-foreground mb-3">Leaderboard Management</h3>
+                      <p className="text-sm text-white/80 mb-4">
+                        Populate or refresh the leaderboard with current user data.
+                      </p>
+                      <Button 
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/leaderboard/populate', { method: 'POST' });
+                            if (response.ok) {
+                              alert('Leaderboard populated successfully!');
+                            } else {
+                              alert('Failed to populate leaderboard');
+                            }
+                          } catch (error) {
+                            alert('Error populating leaderboard');
+                          }
+                        }}
+                        className="bg-gradient-primary hover:opacity-90 text-primary-foreground"
                       >
-                        <Card className="glass-effect hover:bg-white/10 transition-colors cursor-pointer">
-                          <CardContent className="p-6 text-center">
-                            <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mx-auto mb-4`}>
-                              <action.icon className="h-6 w-6 text-white" />
-                            </div>
-                            <h3 className="font-semibold text-foreground mb-2">{action.title}</h3>
-                            <p className="text-sm text-white/80">{action.description}</p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Populate Leaderboard
+                      </Button>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {quickActions.map((action) => (
+                        <motion.div
+                          key={action.title}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Card className="glass-effect hover:bg-white/10 transition-colors cursor-pointer">
+                            <CardContent className="p-6 text-center">
+                              <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mx-auto mb-4`}>
+                                <action.icon className="h-6 w-6 text-white" />
+                              </div>
+                              <h3 className="font-semibold text-foreground mb-2">{action.title}</h3>
+                              <p className="text-sm text-white/80">{action.description}</p>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

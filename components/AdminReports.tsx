@@ -262,7 +262,7 @@ export default function AdminReports() {
                             View Details
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-effect">
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border border-white/20">
                           <DialogHeader>
                             <DialogTitle className="text-foreground">{report.title}</DialogTitle>
                           </DialogHeader>
@@ -304,6 +304,24 @@ export default function AdminReports() {
                                     <span className="text-white/70">Reported By:</span>
                                     <span className="text-foreground font-medium">
                                       {report.user?.full_name || 'Unknown'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-white/70">Reporter Email:</span>
+                                    <span className="text-foreground font-medium">
+                                      {report.user?.email || 'Unknown'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-white/70">Reporter Reputation:</span>
+                                    <span className="text-foreground font-medium">
+                                      {report.user?.reputation || 0}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-white/70">Reporter Honor Points:</span>
+                                    <span className="text-foreground font-medium">
+                                      {report.user?.honor_score_points || 0}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">

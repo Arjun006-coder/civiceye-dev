@@ -60,7 +60,7 @@ export function useUser() {
               bio: '',
               profile_pic_url: clerkData.user.imageUrl,
               honor_score_points: 0,
-              reputation: 0,
+              reputation: 10,
               role: 'user',
               is_active: true,
               created_at: new Date().toISOString(),
@@ -79,7 +79,7 @@ export function useUser() {
             bio: '',
             profile_pic_url: clerkData.user.imageUrl,
             honor_score_points: 0,
-            reputation: 0,
+            reputation: 10,
             role: 'user',
             is_active: true,
             created_at: new Date().toISOString(),
@@ -98,7 +98,7 @@ export function useUser() {
           bio: '',
           profile_pic_url: clerkData.user.imageUrl,
           honor_score_points: 0,
-          reputation: 0,
+          reputation: 10,
           role: 'user',
           is_active: true,
           created_at: new Date().toISOString(),
@@ -113,17 +113,11 @@ export function useUser() {
     syncUser()
   }, [isClerkAvailable, clerkData.user, clerkData.isLoaded])
 
-  // Fallback admin detection by email (useful if DB role not synced yet)
-  const fallbackAdmin = ((): boolean => {
-    const adminEmail = 'arjun1234agrawal@gmail.com'
-    return Boolean(user?.email && user.email.toLowerCase() === adminEmail)
-  })()
-
   return {
     user,
     loading,
     error,
-    isAdmin: user?.role === 'admin' || fallbackAdmin,
+    isAdmin: user?.role === 'admin',
     isLoaded: isClerkAvailable ? (clerkData.isLoaded && !loading) : true
   }
 }

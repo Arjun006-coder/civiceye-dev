@@ -13,6 +13,7 @@ import { Footer } from "@/components/Footer";
 const Leaderboard = () => {
   const router = useRouter();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [myRank, setMyRank] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +29,7 @@ const Leaderboard = () => {
       
       const data = await response.json();
       setLeaderboard(data.leaderboard || []);
+      setMyRank(typeof data.myRank === 'number' ? data.myRank : null);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -177,6 +179,39 @@ const Leaderboard = () => {
                       </div>
                     </motion.div>
                   ))}
+
+                  {(myRank === null || myRank > 10) && (
+                    <div
+                      className={`flex items-center justify-between p-6 rounded-lg border transition-colors border-border/50`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center justify-center w-12 h-12">
+                          {myRank ? getRankIcon(myRank) : <Trophy className="h-5 w-5 text-muted-foreground" />}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground">You</h3>
+                          <p className="text-sm text-white/70">Your account</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-6">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-vibrant-blue">-</p>
+                          <p className="text-sm text-white/70">Points</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-vibrant-green">-</p>
+                          <p className="text-sm text-white/70">Verified</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-vibrant-orange">-</p>
+                          <p className="text-sm text-white/70">Total</p>
+                        </div>
+                        <Badge className={`px-3 py-1 text-sm font-bold ${myRank ? getRankBadgeColor(11) : 'bg-gradient-to-r from-gray-400 to-gray-600 text-gray-900'}`}>
+                          {myRank ? `#${myRank}` : 'NA'}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -189,7 +224,7 @@ const Leaderboard = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+            className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             <Card className="glass-effect">
               <CardContent className="p-6 text-center">
@@ -210,18 +245,10 @@ const Leaderboard = () => {
                 <p className="text-white/90 font-medium">Total Verified Reports</p>
               </CardContent>
             </Card>
-
-            <Card className="glass-effect">
-              <CardContent className="p-6 text-center">
-                <Medal className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-vibrant-blue">
-                  {leaderboard.reduce((sum, entry) => sum + (Number(entry.total_points) || 0), 0)}
-                </p>
-                <p className="text-white/90 font-medium">Total Points Earned</p>
-              </CardContent>
-            </Card>
           </motion.div>
         )}
+
+        {/* Rank row now shown within the leaderboard list above */}
       </main>
       
       {/* Footer */}

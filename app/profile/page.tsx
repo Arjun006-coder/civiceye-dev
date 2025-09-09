@@ -117,7 +117,7 @@ const ProfileContent = () => {
   const userStats = {
     honorPoints: dbUser.honor_score_points,
     totalReports: reports.length,
-    resolvedReports: reports.filter(r => r.verification_status === 'verified').length,
+    verifiedReports: reports.filter(r => r.verification_status === 'verified').length,
     pendingReports: reports.filter(r => r.verification_status === 'pending').length,
     rejectedReports: reports.filter(r => r.verification_status === 'rejected').length,
     communityRank: 1, // This would need to be calculated from leaderboard
@@ -129,13 +129,21 @@ const ProfileContent = () => {
 
   const recentReports = reports.slice(0, 5);
 
-  const honorPointsHistory = [
-    { date: '2025-09-01', points: 50, reason: 'Street Light Report Verified', type: 'earned' },
-    { date: '2025-08-25', points: 75, reason: 'Garbage Collection Issue Resolved', type: 'earned' },
-    { date: '2025-08-15', points: 100, reason: 'Traffic Signal Report', type: 'earned' },
-    { date: '2025-08-10', points: 25, reason: 'Quick Response Bonus', type: 'earned' },
-    { date: '2025-08-05', points: 60, reason: 'Community Impact Achievement', type: 'earned' },
-  ];
+  // Generate honor points history from actual verified reports
+  const honorPointsHistory = reports
+    .filter(report => report.verification_status === 'verified')
+    .map(report => ({
+      date: new Date(report.created_at).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      points: 5, // 5 points per verified report
+      reason: `${report.title} - Verified`,
+      type: 'earned' as const
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10); // Show last 10 entries
 
   const userAchievements = [
     { title: 'First Reporter', description: 'Submitted your first report', icon: '🎯', date: '2024-03-01' },
@@ -166,7 +174,7 @@ const ProfileContent = () => {
       <div className="floating-blob"></div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-6">
+      <header className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 gap-4">
         <div className="flex items-center">
           <Button
             variant="ghost"
@@ -176,12 +184,12 @@ const ProfileContent = () => {
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold hero-text">My Profile</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold hero-text">My Profile</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <Button
             onClick={() => router.push("/edit-profile")}
-            className="bg-gradient-primary hover:opacity-90 text-primary-foreground"
+            className="bg-gradient-primary hover:opacity-90 text-primary-foreground w-full sm:w-auto"
           >
             <Edit3 className="h-4 w-4 mr-2" />
             Edit Profile
@@ -189,7 +197,7 @@ const ProfileContent = () => {
           <Button
             onClick={handleSignOut}
             variant="outline"
-            className="glass-effect hover:bg-red-500/20 border-red-400/50 text-red-400 hover:text-red-300"
+            className="glass-effect hover:bg-red-500/20 border-red-400/50 text-red-400 hover:text-red-300 w-full sm:w-auto"
           >
             <X className="h-4 w-4 mr-2" />
             Sign Out
@@ -198,7 +206,7 @@ const ProfileContent = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Profile Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -239,88 +247,104 @@ const ProfileContent = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-8"
         >
           <Card
-            className="glass-effect cursor-pointer hover:scale-105 transition-transform"
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform border-orange-400/30"
             onClick={() => setActiveModal('honor-points')}
           >
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <Trophy className="h-5 w-5 mr-2 text-primary" />
+                <Trophy className="h-5 w-5 mr-2 text-orange-400" />
                 Honor Points
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-primary">{userStats.honorPoints}</p>
+              <p className="text-3xl font-bold text-orange-400">{userStats.honorPoints}</p>
               <p className="text-sm text-white/90">Rank #{userStats.communityRank}</p>
             </CardContent>
           </Card>
 
           <Card
-            className="glass-effect cursor-pointer hover:scale-105 transition-transform"
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform border-blue-400/30"
             onClick={() => setActiveModal('total-reports')}
           >
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <FileText className="h-5 w-5 mr-2 text-secondary" />
+                <FileText className="h-5 w-5 mr-2 text-blue-400" />
                 Total Reports
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-secondary">{userStats.totalReports}</p>
+              <p className="text-3xl font-bold text-blue-400">{userStats.totalReports}</p>
               <p className="text-sm text-white/90">All time submissions</p>
             </CardContent>
           </Card>
 
           <Card
-            className="glass-effect cursor-pointer hover:scale-105 transition-transform"
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform border-green-400/30"
             onClick={() => setActiveModal('verified-reports')}
           >
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <CheckCircle className="h-5 w-5 mr-2 text-success" />
+                <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
                 Verified Reports
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-success">{userStats.resolvedReports}</p>
+              <p className="text-3xl font-bold text-green-400">{userStats.verifiedReports}</p>
               <p className="text-sm text-white/90">Successfully verified</p>
             </CardContent>
           </Card>
 
           <Card
-            className="glass-effect cursor-pointer hover:scale-105 transition-transform"
-            onClick={() => setActiveModal('resolved-reports')}
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform border-purple-400/30"
+            onClick={() => setActiveModal('success-rate')}
           >
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <CheckCircle className="h-5 w-5 mr-2 text-accent" />
-                Resolved
+                <CheckCircle className="h-5 w-5 mr-2 text-purple-400" />
+                Success Rate
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-accent">{userStats.resolvedReports}</p>
-              <p className="text-sm text-white/90">
+              <p className="text-3xl font-bold text-purple-400">
                 {userStats.totalReports > 0 
-                  ? Math.round((userStats.resolvedReports / userStats.totalReports) * 100)
-                  : 0}% success rate
+                  ? Math.round((userStats.verifiedReports / userStats.totalReports) * 100)
+                  : 0}%
               </p>
+              <p className="text-sm text-white/90">Verification success rate</p>
             </CardContent>
           </Card>
 
           <Card
-            className="glass-effect cursor-pointer hover:scale-105 transition-transform"
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform border-yellow-400/30"
+            onClick={() => setActiveModal('reputation')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-foreground">
+                <Star className="h-5 w-5 mr-2 text-yellow-400" />
+                Reputation
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-yellow-400">{dbUser.reputation || 0}</p>
+              <p className="text-sm text-white/90">Community standing</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="glass-effect cursor-pointer hover:scale-105 transition-transform border-orange-400/30"
             onClick={() => setActiveModal('achievements')}
           >
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-foreground">
-                <Award className="h-5 w-5 mr-2 text-accent" />
+                <Award className="h-5 w-5 mr-2 text-orange-400" />
                 Achievements
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-accent">{userAchievements.length}</p>
+              <p className="text-3xl font-bold text-orange-400">{userAchievements.length}</p>
               <p className="text-sm text-white/90">Badges earned</p>
             </CardContent>
           </Card>
@@ -402,13 +426,10 @@ const ProfileContent = () => {
                 <DialogTitle className="sr-only">Honor Points History</DialogTitle>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground flex items-center">
-                      <Trophy className="mr-2 h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <Trophy className="mr-2 h-6 w-6 text-orange-400" />
                       Honor Points History
                     </h2>
-                    <Button variant="ghost" onClick={() => setActiveModal(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
                   <div className="space-y-3">
                     {honorPointsHistory.map((entry, index) => (
@@ -443,13 +464,10 @@ const ProfileContent = () => {
                 <DialogTitle className="sr-only">All My Reports</DialogTitle>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground flex items-center">
-                      <FileText className="mr-2 h-6 w-6 text-secondary" />
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <FileText className="mr-2 h-6 w-6 text-blue-400" />
                       All My Reports
                     </h2>
-                    <Button variant="ghost" onClick={() => setActiveModal(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
                   <div className="space-y-3">
                     {reports.map((report, index) => (
@@ -497,13 +515,10 @@ const ProfileContent = () => {
                 <DialogTitle className="sr-only">Verified Reports</DialogTitle>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground flex items-center">
-                      <CheckCircle className="mr-2 h-6 w-6 text-success" />
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <CheckCircle className="mr-2 h-6 w-6 text-green-400" />
                       Verified Reports
                     </h2>
-                    <Button variant="ghost" onClick={() => setActiveModal(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
                   <div className="space-y-3">
                     {reports.filter(report => report.verification_status === 'verified').map((report, index) => (
@@ -540,49 +555,96 @@ const ProfileContent = () => {
             </Dialog>
           )}
 
-          {activeModal === 'resolved-reports' && (
+          {activeModal === 'success-rate' && (
             <Dialog open={true} onOpenChange={() => setActiveModal(null)}>
-              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto glass-effect">
-                <DialogTitle className="sr-only">Resolved Reports</DialogTitle>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto glass-effect">
+                <DialogTitle className="sr-only">Success Rate Details</DialogTitle>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground flex items-center">
-                      <CheckCircle className="mr-2 h-6 w-6 text-accent" />
-                      Resolved Reports
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <CheckCircle className="mr-2 h-6 w-6 text-purple-400" />
+                      Success Rate Details
                     </h2>
-                    <Button variant="ghost" onClick={() => setActiveModal(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
-                  <div className="space-y-3">
-                    {reports.filter(report => report.verification_status === 'verified').map((report, index) => (
-                      <motion.div
-                        key={report.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="p-4 border border-accent/30 rounded-lg bg-accent/10"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-foreground">{report.title}</h3>
-                          <StatusBadge 
-                            status="verified" 
-                            type="verification" 
-                          />
+                  <div className="space-y-4">
+                    <div className="p-6 border border-accent/30 rounded-lg bg-accent/10 text-center">
+                      <div className="text-4xl font-bold text-accent mb-2">
+                        {userStats.totalReports > 0 
+                          ? Math.round((userStats.verifiedReports / userStats.totalReports) * 100)
+                          : 0}%
+                      </div>
+                      <p className="text-white/90 font-medium">Verification Success Rate</p>
+                      <p className="text-sm text-white/70 mt-2">
+                        {userStats.verifiedReports} out of {userStats.totalReports} reports verified
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-foreground">Report Status Breakdown</h3>
+                      <div className="space-y-2 text-sm text-white/80">
+                        <div className="flex justify-between">
+                          <span>Verified Reports:</span>
+                          <span className="text-green-400">{userStats.verifiedReports}</span>
                         </div>
-                        <p className="text-sm text-white/80 mb-2">{report.description}</p>
-                        <div className="flex items-center justify-between text-sm text-white/70">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {report.address}
-                          </div>
-                          <div className="flex items-center">
-                            <Star className="h-4 w-4 mr-1 text-accent" />
-                            +5 pts earned
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Pending Reports:</span>
+                          <span className="text-yellow-400">{userStats.pendingReports}</span>
                         </div>
-                      </motion.div>
-                    ))}
+                        <div className="flex justify-between">
+                          <span>Rejected Reports:</span>
+                          <span className="text-red-400">{userStats.rejectedReports}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Reports:</span>
+                          <span className="text-white">{userStats.totalReports}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {activeModal === 'reputation' && (
+            <Dialog open={true} onOpenChange={() => setActiveModal(null)}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto glass-effect">
+                <DialogTitle className="sr-only">Reputation Details</DialogTitle>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <Star className="mr-2 h-6 w-6 text-yellow-400" />
+                      Reputation Details
+                    </h2>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="p-6 border border-yellow-400/30 rounded-lg bg-yellow-400/10 text-center">
+                      <div className="text-4xl font-bold text-yellow-400 mb-2">
+                        {dbUser.reputation || 0}
+                      </div>
+                      <p className="text-white/90 font-medium">Current Reputation Score</p>
+                      <p className="text-sm text-white/70 mt-2">
+                        Your reputation is based on verified reports and community contributions
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-foreground">How Reputation Works</h3>
+                      <div className="space-y-2 text-sm text-white/80">
+                        <div className="flex justify-between">
+                          <span>Verified Report:</span>
+                          <span className="text-green-400">+0.5 points</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>High Quality Report:</span>
+                          <span className="text-green-400">+1.0 points</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Community Impact:</span>
+                          <span className="text-green-400">+2.0 points</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </DialogContent>
@@ -595,13 +657,10 @@ const ProfileContent = () => {
                 <DialogTitle className="sr-only">My Achievements</DialogTitle>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground flex items-center">
-                      <Award className="mr-2 h-6 w-6 text-accent" />
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <Award className="mr-2 h-6 w-6 text-orange-400" />
                       My Achievements
                     </h2>
-                    <Button variant="ghost" onClick={() => setActiveModal(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {userAchievements.map((achievement, index) => (
