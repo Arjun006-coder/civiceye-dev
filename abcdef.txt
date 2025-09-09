@@ -121,3 +121,5 @@ Backend
 - ESLint/type errors fail builds; warnings can be cleaned progressively
 
 This document explains technologies, each module’s responsibility, and how data flows end‑to‑end so you can present “who built what and how it connects.”
+
+

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 import { Report } from '@/lib/supabase';
 import L from 'leaflet';
+import ReportDetailsDialog from './ReportDetailsDialog';
 
 // Fix for default markers in React-Leaflet
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,10 +138,17 @@ function HeatmapLayer({ reports }: { reports: Report[] }) {
 
 export default function MapComponent({ reports }: MapComponentProps) {
   const [isClient, setIsClient] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleReportClick = (report: Report) => {
+    setSelectedReport(report);
+    setIsDialogOpen(true);
+  };
 
   if (!isClient) {
     return (
@@ -154,7 +162,7 @@ export default function MapComponent({ reports }: MapComponentProps) {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full relative">
       <MapContainer
         center={[20.5937, 78.9629]} // Center on India
         zoom={5}
@@ -167,7 +175,51 @@ export default function MapComponent({ reports }: MapComponentProps) {
         />
         <MapUpdater reports={reports} />
         <HeatmapLayer reports={reports} />
+        
+        {/* Individual Report Markers */}
+        {reports.map((report) => {
+          if (!report.latitude || !report.longitude) return null;
+          
+          return (
+            <Marker
+              key={report.id}
+              position={[report.latitude, report.longitude]}
+            >
+              <Popup>
+                <div className="p-2 min-w-[200px]">
+                  <h3 className="font-bold text-sm mb-2 text-gray-800">
+                    {report.title}
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                    {report.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      {report.address}
+                    </span>
+                    <button
+                      onClick={() => handleReportClick(report)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition-colors"
+                    >
+                      See Details
+                    </button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
+      
+      {/* Report Details Dialog */}
+      <ReportDetailsDialog
+        report={selectedReport}
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setSelectedReport(null);
+        }}
+      />
     </div>
   );
 }

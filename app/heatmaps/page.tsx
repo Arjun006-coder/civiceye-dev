@@ -4,11 +4,12 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, AlertTriangle, TrendingUp, Loader2, BarChart3, Layers } from "lucide-react";
+import { ArrowLeft, MapPin, AlertTriangle, Loader2, BarChart3, Layers, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Report } from "@/lib/supabase";
 import dynamic from 'next/dynamic';
+import ReportDetailsDialog from './ReportDetailsDialog';
 
 // Dynamically import the map component to avoid SSR issues
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -26,6 +27,8 @@ const Heatmaps = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchHeatmapData();
@@ -87,6 +90,11 @@ const Heatmaps = () => {
     if (intensity >= 0.4) return "Medium";
     if (intensity >= 0.2) return "Low";
     return "Very Low";
+  };
+
+  const handleReportClick = (report: Report) => {
+    setSelectedReport(report);
+    setIsDialogOpen(true);
   };
 
   // Consider only verified reports for stats
@@ -188,7 +196,7 @@ const Heatmaps = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
             >
               <Card className="glass-effect">
                 <CardHeader className="pb-2">
@@ -216,18 +224,6 @@ const Heatmaps = () => {
                 </CardContent>
               </Card>
 
-              <Card className="glass-effect">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center text-foreground">
-                    <TrendingUp className="h-5 w-5 mr-2 text-vibrant-orange" />
-                    Auto Verified
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-vibrant-orange">{stats.verifiedReports}</p>
-                  <p className="text-white/80">AI confirmed</p>
-                </CardContent>
-              </Card>
 
               <Card className="glass-effect">
                 <CardHeader className="pb-2">
@@ -304,11 +300,20 @@ const Heatmaps = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right space-y-2">
                             <div className={`w-4 h-4 rounded-full ${getIntensityColor(report.final_confidence_score || 0)}`}></div>
-                            <p className="text-xs text-white/70 mt-1">
+                            <p className="text-xs text-white/70">
                               {getIntensityLabel(report.final_confidence_score || 0)}
                             </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReportClick(report)}
+                              className="text-xs h-7 px-2 bg-white/10 border-white/20 hover:bg-white/20"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Details
+                            </Button>
                           </div>
                         </motion.div>
                       ))}
@@ -320,6 +325,16 @@ const Heatmaps = () => {
           </>
         )}
       </main>
+      
+      {/* Report Details Dialog */}
+      <ReportDetailsDialog
+        report={selectedReport}
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setSelectedReport(null);
+        }}
+      />
     </div>
   );
 };

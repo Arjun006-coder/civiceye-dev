@@ -32,7 +32,7 @@ export async function POST() {
             email TEXT,
             address TEXT,
             profile_pic_url TEXT,
-            honor_score_points INTEGER DEFAULT 10,
+            honor_score_points INTEGER DEFAULT 0,
             reputation INTEGER DEFAULT 10,
             role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
             is_active BOOLEAN DEFAULT true,
