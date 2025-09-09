@@ -262,7 +262,7 @@ export default function AdminReports() {
                             View Details
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[rgba(15,23,42,0.7)] bg-gradient-to-br from-[rgba(17,24,39,0.75)] to-[rgba(2,6,23,0.6)] backdrop-blur-md border border-white/10 text-white">
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[rgba(15,23,42,0.7)] bg-gradient-to-br from-[rgba(17,24,39,0.78)] to-[rgba(2,6,23,0.62)] backdrop-blur-md border border-white/10 text-white rounded-2xl ring-1 ring-white/10 shadow-xl">
                           <DialogHeader>
                             <DialogTitle className="text-white">{report.title}</DialogTitle>
                           </DialogHeader>
@@ -291,42 +291,42 @@ export default function AdminReports() {
                                 <h4 className="font-semibold mb-3 text-white">Report Information</h4>
                                 <div className="space-y-3 text-sm">
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Issue Type:</span>
-                                    <span className="text-white font-medium">
+                                    <span className="text-blue-200/90 font-medium">Issue Type:</span>
+                                    <span className="text-white/95 font-semibold">
                                       {report.issue_category?.type || 'Unknown'}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Location:</span>
-                                    <span className="text-white font-medium">{report.address}</span>
+                                    <span className="text-blue-200/90 font-medium">Location:</span>
+                                    <span className="text-white/90 font-semibold">{report.address}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Reported By:</span>
-                                    <span className="text-white font-medium">
+                                    <span className="text-blue-200/90 font-medium">Reported By:</span>
+                                    <span className="text-white/95 font-semibold">
                                       {report.user?.full_name || 'Unknown'}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Reporter Email:</span>
-                                    <span className="text-white font-medium">
+                                    <span className="text-blue-200/90 font-medium">Reporter Email:</span>
+                                    <span className="text-white/90 font-semibold">
                                       {report.user?.email || 'Unknown'}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Reporter Reputation:</span>
-                                    <span className="text-white font-medium">
+                                    <span className="text-blue-200/90 font-medium">Reporter Reputation:</span>
+                                    <span className="text-white/95 font-semibold">
                                       {report.user?.reputation || 0}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Reporter Honor Points:</span>
-                                    <span className="text-white font-medium">
+                                    <span className="text-blue-200/90 font-medium">Reporter Honor Points:</span>
+                                    <span className="text-white/95 font-semibold">
                                       {report.user?.honor_score_points || 0}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-blue-200/90">Date:</span>
-                                    <span className="text-white font-medium">
+                                    <span className="text-blue-200/90 font-medium">Date:</span>
+                                    <span className="text-white/90 font-semibold">
                                       {new Date(report.created_at).toLocaleDateString()}
                                     </span>
                                   </div>
@@ -337,7 +337,7 @@ export default function AdminReports() {
                                 <h4 className="font-semibold mb-3 text-white">Status & Confidence</h4>
                                 <div className="space-y-3">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-blue-200/90">Status:</span>
+                                    <span className="text-blue-200/90 font-medium">Status:</span>
                                     <StatusBadge 
                                       status={report.verification_status} 
                                       type="verification" 
@@ -350,8 +350,8 @@ export default function AdminReports() {
                                     />
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-blue-200/90">Municipality Handling Status:</span>
-                                    <Badge variant="secondary" className="ml-2">
+                                    <span className="text-blue-200/90 font-medium">Municipality Handling Status:</span>
+                                    <Badge variant="secondary" className="ml-2 bg-white/10 text-white border-white/20">
                                       Not Started
                                     </Badge>
                                   </div>
@@ -364,7 +364,7 @@ export default function AdminReports() {
                             {/* Description */}
                             <div>
                               <h4 className="font-semibold mb-3 text-white">Description</h4>
-                              <p className="text-sm text-white/90 leading-relaxed">{report.description}</p>
+                              <p className="text-sm text-white/95 leading-relaxed">{report.description}</p>
                             </div>
 
                             {/* Action Buttons */}

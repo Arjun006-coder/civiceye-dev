@@ -579,7 +579,7 @@ const ProfileContent = () => {
                       </p>
                     </div>
                     
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       <h3 className="font-semibold text-foreground">Report Status Breakdown</h3>
                       <div className="space-y-2 text-sm text-white/80">
                         <div className="flex justify-between">
@@ -634,11 +634,11 @@ const ProfileContent = () => {
                         <div className="flex justify-between">
                           <span>Verified Report:</span>
                           <span className="text-green-400">+0.5 points</span>
-                        </div>
+                          </div>
                         <div className="flex justify-between">
                           <span>High Quality Report:</span>
                           <span className="text-green-400">+1.0 points</span>
-                        </div>
+                          </div>
                         <div className="flex justify-between">
                           <span>Community Impact:</span>
                           <span className="text-green-400">+2.0 points</span>
