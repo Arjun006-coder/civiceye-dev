@@ -55,7 +55,7 @@ export async function GET() {
           verified_reports: verifiedReports,
         }
       })
-      .filter(entry => entry.reports_submitted > 0)
+      .filter(entry => entry.verified_reports > 0)
       .sort((a, b) => {
         if ((b.total_points || 0) !== (a.total_points || 0)) {
           return (b.total_points || 0) - (a.total_points || 0)
