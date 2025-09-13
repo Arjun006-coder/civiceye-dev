@@ -6,20 +6,11 @@ import { ClerkProvider } from '@clerk/nextjs';
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-  
-  // If no publishable key is available, render without Clerk (for build time)
-  if (!publishableKey || publishableKey === 'pk_test_placeholder') {
-    return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
-  }
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   
   return (
     <ClerkProvider
-      publishableKey={publishableKey}
+      publishableKey={publishableKey!}
       appearance={{
         layout: {
           // optional, but makes sure Clerk uses your routes

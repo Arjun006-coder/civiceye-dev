@@ -41,7 +41,7 @@ export interface Report {
   title: string
   description: string
   issue_category_id: string
-  verification_status: 'pending' | 'verified' | 'rejected' | 'under_review'
+  verification_status: 'pending' | 'verified' | 'rejected' | 'under_review' | 'resolved'
   verification_color: string
   latitude: number
   longitude: number

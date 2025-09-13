@@ -80,7 +80,7 @@ const UserDashboard = () => {
       
       const data = await response.json();
       setReports(data.reports || []);
-      console.log('Reports fetched:', data.reports?.map(r => ({ id: r.id, status: r.verification_status, title: r.title })));
+      console.log('Reports fetched:', data.reports?.map((r: { id: string; verification_status: string; title: string }) => ({ id: r.id, status: r.verification_status, title: r.title })));
     } catch (err) {
       console.error('Error fetching reports:', err);
     }

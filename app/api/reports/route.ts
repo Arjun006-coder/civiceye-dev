@@ -116,6 +116,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // AI Analysis removed - will be handled by external service
+
     // Get user's database ID and reputation
     console.log('Looking for user with clerk_id:', userId);
     const { data: user, error: userError } = await supabaseAdmin
@@ -177,12 +179,10 @@ export async function POST(request: NextRequest) {
       confidenceScore += corroborationBonus
     }
 
-    // Factor 3: AI analysis (0 for now)
-    const aiConfidence = 0
-    confidenceScore += aiConfidence
+    // Factor 3: AI analysis removed - will be handled by external service
 
-    // Cap confidence score to max 0.8 without AI
-    confidenceScore = Math.min(Math.max(confidenceScore, 0), 0.8)
+    // Cap confidence score to max 1.0 (now includes AI analysis)
+    confidenceScore = Math.min(Math.max(confidenceScore, 0), 1.0)
 
     // Determine verification status (no auto-verify status)
     // If high confidence, mark as under_review; else pending
@@ -192,22 +192,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create report
-    console.log('Creating report with data:', {
-      user_id: user.id,
-      title,
-      description,
-      issue_category_id,
-      latitude,
-      longitude,
-      address,
-      images: images || [],
-      verification_status: verificationStatus,
-      verification_color: getVerificationColor(verificationStatus),
-      harmful_content: false,
-      ai_confidence_score: aiConfidence,
-      multiple_report_confidence_score: nearbySimilarReports ? Math.min(nearbySimilarReports.length * 0.1, 0.2) : 0,
-      final_confidence_score: confidenceScore
-    });
 
     const { data: report, error } = await supabaseAdmin
       .from('reports')
@@ -223,7 +207,8 @@ export async function POST(request: NextRequest) {
         verification_status: verificationStatus,
         verification_color: getVerificationColor(verificationStatus),
         harmful_content: false,
-        ai_confidence_score: aiConfidence,
+        is_nsfw: false,
+        ai_confidence_score: 0,
         multiple_report_confidence_score: nearbySimilarReports ? Math.min(nearbySimilarReports.length * 0.1, 0.2) : 0,
         final_confidence_score: confidenceScore
       })
