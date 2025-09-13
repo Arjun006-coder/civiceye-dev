@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     console.log('Request body:', body);
     const { title, description, issue_category_id, latitude, longitude, address, images } = body
 
-    // Check for duplicate reports within 20m radius
+    // Check for duplicate reports within 35m radius
     if (latitude && longitude) {
       const { data: nearbyReports, error: nearbyError } = await supabaseAdmin
         .from('reports')
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
           const distance = R * c // Distance in meters
           
-          return distance <= 20 // 20 meter radius
+          return distance <= 35 // 35 meter radius
         })
 
         if (duplicateFound) {

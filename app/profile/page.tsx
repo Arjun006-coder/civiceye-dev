@@ -157,6 +157,8 @@ const ProfileContent = () => {
     switch (status) {
       case "verified":
         return <CheckCircle className="h-4 w-4 text-success" />;
+      case "resolved":
+        return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case "pending":
         return <Clock className="h-4 w-4 text-warning" />;
       case "rejected":

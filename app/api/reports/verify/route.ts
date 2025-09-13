@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getVerificationColor } from '@/lib/supabase'
+import { supabaseAdmin, getVerificationColor, calculateDistanceMeters, recomputeCentroid } from '@/lib/supabase'
 import { auth } from '@clerk/nextjs/server'
 
 async function updateLeaderboard(userId: string) {
@@ -96,6 +96,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
+    // Read current status to ensure idempotent honor updates
+    const { data: before } = await supabaseAdmin
+      .from('reports')
+      .select('id, verification_status')
+      .eq('id', reportId)
+      .single()
+
     // Update report status
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('reports')
@@ -110,6 +117,77 @@ export async function POST(request: NextRequest) {
 
     if (updateError || !updated) {
       return NextResponse.json({ error: updateError?.message || 'Failed to update report' }, { status: 500 })
+    }
+
+    // On verified, group the report into a Problem (within 35m, same issue_category)
+    if (status === 'verified' && before?.verification_status !== 'verified') {
+      // Fetch the full report details first
+      const { data: fullReport } = await supabaseAdmin
+        .from('reports')
+        .select('id, latitude, longitude, issue_category_id, problem_id')
+        .eq('id', reportId)
+        .single()
+
+      if (fullReport && fullReport.latitude && fullReport.longitude && fullReport.issue_category_id) {
+        // Find existing problems of same category within ~100m coarse filter, then 35m precise check
+        const { data: candidateProblems } = await supabaseAdmin
+          .from('problems')
+          .select('id, issue_category_id, centroid_lat, centroid_lng, reports_count, report_ids, status')
+          .eq('issue_category_id', fullReport.issue_category_id)
+
+        let chosenProblemId: string | null = null
+        if (candidateProblems && candidateProblems.length > 0) {
+          for (const p of candidateProblems) {
+            const d = calculateDistanceMeters(Number(p.centroid_lat), Number(p.centroid_lng), Number(fullReport.latitude), Number(fullReport.longitude))
+            if (d <= 35) {
+              chosenProblemId = p.id
+              // Update centroid and stats
+              const newCount = (p.reports_count || 0) + 1
+              const newIds = Array.isArray(p.report_ids) ? [...p.report_ids, fullReport.id] : [fullReport.id]
+              // Recompute centroid using existing centroid as approximate (keep simple V1)
+              const newCentroid = recomputeCentroid([
+                { lat: Number(p.centroid_lat), lng: Number(p.centroid_lng) },
+                { lat: Number(fullReport.latitude), lng: Number(fullReport.longitude) }
+              ])
+              await supabaseAdmin
+                .from('problems')
+                .update({
+                  centroid_lat: newCentroid.lat,
+                  centroid_lng: newCentroid.lng,
+                  reports_count: newCount,
+                  report_ids: newIds
+                })
+                .eq('id', p.id)
+              break
+            }
+          }
+        }
+
+        if (!chosenProblemId) {
+          // Create new problem
+          const { data: created } = await supabaseAdmin
+            .from('problems')
+            .insert({
+              issue_category_id: fullReport.issue_category_id,
+              centroid_lat: fullReport.latitude,
+              centroid_lng: fullReport.longitude,
+              radius_m: 35,
+              status: 'open',
+              reports_count: 1,
+              report_ids: [fullReport.id]
+            })
+            .select('id')
+            .single()
+          chosenProblemId = created?.id || null
+        }
+
+        if (chosenProblemId) {
+          await supabaseAdmin
+            .from('reports')
+            .update({ problem_id: chosenProblemId })
+            .eq('id', fullReport.id)
+        }
+      }
     }
 
     // Adjust honor points and reputation on verify only

@@ -32,6 +32,7 @@ const ReportPage = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [locating, setLocating] = useState(false);
+  const [reverseGeocoding, setReverseGeocoding] = useState(false);
 
   const [issueCategories, setIssueCategories] = useState<{ id: string; description: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -160,6 +161,23 @@ const ReportPage = () => {
         latitude: best.lat.toString(),
         longitude: best.lng.toString()
       }));
+
+      // Try reverse geocoding to auto-fill address (Nominatim)
+      try {
+        setReverseGeocoding(true);
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${best.lat}&lon=${best.lng}`;
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (resp.ok) {
+          const data = await resp.json();
+          const nice = data?.display_name as string | undefined;
+          if (nice && nice.length > 0) {
+            setFormData(prev => ({ ...prev, address: nice }));
+          }
+        }
+      } catch {}
+      finally {
+        setReverseGeocoding(false);
+      }
     } finally {
       setLocating(false);
     }
@@ -422,7 +440,7 @@ const ReportPage = () => {
                     className="glass-effect hover:bg-primary/20 border-white/20 text-white"
                   >
                     <MapPin className="h-4 w-4 mr-2" />
-                    {locating ? 'Getting precise location…' : 'Use Current Location'}
+                    {locating ? 'Getting precise location…' : reverseGeocoding ? 'Getting address…' : 'Use Current Location'}
                   </Button>
                 </div>
 

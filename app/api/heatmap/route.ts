@@ -12,6 +12,7 @@ export async function GET() {
         issue_category:issue_categories(*)
       `)
       .eq('verification_status', 'verified')
+      .not('verification_status', 'eq', 'resolved')
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
       .order('created_at', { ascending: false })

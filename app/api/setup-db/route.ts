@@ -72,6 +72,7 @@ export async function POST() {
             harmful_content BOOLEAN DEFAULT false,
             final_confidence_score DECIMAL(3, 2),
             admin_notes TEXT,
+            problem_id UUID,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
           )
@@ -93,6 +94,84 @@ export async function POST() {
       if (error) {
         console.error(`Error creating table ${table.name}:`, error);
       }
+    }
+
+    // Create Problems-related tables and constraints
+    const problemsSQL = `
+      CREATE TABLE IF NOT EXISTS problems (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        issue_category_id UUID REFERENCES issue_categories(id),
+        centroid_lat DECIMAL(10, 8),
+        centroid_lng DECIMAL(11, 8),
+        radius_m INTEGER DEFAULT 35,
+        status TEXT DEFAULT 'open',
+        reports_count INTEGER DEFAULT 0,
+        report_ids JSONB DEFAULT '[]',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE constraint_name = 'reports_problem_fk'
+        ) THEN
+          ALTER TABLE reports
+          ADD CONSTRAINT reports_problem_fk FOREIGN KEY (problem_id) REFERENCES problems(id);
+        END IF;
+      END$$;
+      CREATE TABLE IF NOT EXISTS problem_votes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        problem_id UUID REFERENCES problems(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        vote TEXT CHECK (vote IN ('agree','disagree')),
+        reason TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (problem_id, user_id)
+      );
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT,
+        message TEXT,
+        type TEXT DEFAULT 'info',
+        is_read BOOLEAN DEFAULT false,
+        related_report_id UUID,
+        related_problem_id UUID,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      -- Ensure notifications.related_problem_id exists (for environments created before this column)
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='notifications' AND column_name='related_problem_id'
+        ) THEN
+          ALTER TABLE notifications ADD COLUMN related_problem_id UUID;
+        END IF;
+      END$$;
+      -- Ensure reports.problem_id column exists
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='reports' AND column_name='problem_id'
+        ) THEN
+          ALTER TABLE reports ADD COLUMN problem_id UUID;
+          BEGIN
+            ALTER TABLE reports ADD CONSTRAINT reports_problem_fk FOREIGN KEY (problem_id) REFERENCES problems(id);
+          EXCEPTION WHEN others THEN
+            -- constraint may already exist
+            NULL;
+          END;
+        END IF;
+      END$$;
+    `;
+
+    try {
+      await supabaseAdmin.rpc('exec_sql', { sql: problemsSQL });
+    } catch (error) {
+      console.error('Error creating problems tables:', error);
     }
 
     // Insert default categories
@@ -129,6 +208,25 @@ export async function POST() {
       await supabaseAdmin.rpc('exec_sql', { sql: alterUsersSQL });
     } catch (error) {
       console.error('Error ensuring users extra columns:', error);
+    }
+
+    // Create increment_honor_points function
+    const honorFunctionSQL = `
+      CREATE OR REPLACE FUNCTION increment_honor_points(user_id uuid, points integer)
+      RETURNS void AS $$
+      BEGIN
+        UPDATE users 
+        SET honor_score_points = honor_score_points + points,
+            updated_at = NOW()
+        WHERE id = user_id;
+      END;
+      $$ LANGUAGE plpgsql SECURITY DEFINER;
+    `;
+
+    try {
+      await supabaseAdmin.rpc('exec_sql', { sql: honorFunctionSQL });
+    } catch (error) {
+      console.error('Error creating honor function:', error);
     }
 
     // Disable RLS for Clerk authentication

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   FileText, 
@@ -23,6 +22,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import AdminReports from "@/components/AdminReports";
 import { Footer } from "@/components/Footer";
 
@@ -297,7 +297,7 @@ const AdminDashboardContent = () => {
           transition={{ delay: 0.2, duration: 0.6 }}
         >
           <Tabs defaultValue="reports" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 glass-effect">
+            <TabsList className="grid w-full grid-cols-4 glass-effect">
               <TabsTrigger value="reports" className="text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground">
                 <FileText className="h-4 w-4 mr-2" />
                 Reports
@@ -309,6 +309,10 @@ const AdminDashboardContent = () => {
               <TabsTrigger value="analytics" className="text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Analytics
+              </TabsTrigger>
+              <TabsTrigger value="problems" className="text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Problems
               </TabsTrigger>
             </TabsList>
 
@@ -388,6 +392,27 @@ const AdminDashboardContent = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="problems">
+              <div className="mb-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/problems', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'backfill' }) });
+                      if (!res.ok) throw new Error('Backfill failed');
+                      alert('Backfill completed');
+                    } catch {
+                      alert('Failed to backfill problems');
+                    }
+                  }}
+                >
+                  Backfill from verified reports
+                </Button>
+              </div>
+              <ProblemList />
+            </TabsContent>
           </Tabs>
         </motion.div>
       </main>
@@ -399,3 +424,259 @@ const AdminDashboardContent = () => {
 };
 
 export default AdminDashboardWrapper;
+
+// Render the modal near root to avoid stacking issues
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _AttachModalAtRoot = (() => {
+  // no-op placeholder to keep helpers nearby
+  return null;
+})();
+
+// Problems tab component
+type MinimalProblem = {
+  id: string;
+  status: string;
+  reports_count: number;
+  centroid_lat: number | string;
+  centroid_lng: number | string;
+  radius_m: number;
+};
+
+function ProblemList() {
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [problems, setProblems] = React.useState<MinimalProblem[]>([]);
+  const [selected, setSelected] = React.useState<MinimalProblem | null>(null);
+  const [details, setDetails] = React.useState<{ reports: any[] } | null>(null);
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
+  const [claiming, setClaiming] = React.useState<string | null>(null);
+  const [areaFilter, setAreaFilter] = React.useState('');
+
+  const fetchProblems = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/problems');
+      if (!res.ok) throw new Error('Failed to load problems');
+      const data = await res.json();
+      setProblems(data.problems || []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchProblems();
+  }, []);
+
+  const claimResolved = async (problemId: string) => {
+    try {
+      setClaiming(problemId);
+      const res = await fetch('/api/problems', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'claim_resolved', problem_id: problemId })
+      });
+      if (!res.ok) throw new Error('Failed to claim resolved');
+      await fetchProblems();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setClaiming(null);
+    }
+  };
+
+  const openDetails = async (problem: MinimalProblem) => {
+    try {
+      setSelected(problem);
+      const res = await fetch(`/api/problems/${problem.id}`);
+      if (!res.ok) throw new Error('Failed to load details');
+      const data = await res.json();
+      setDetails({ reports: data.reports || [] });
+      setDetailsOpen(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="glass-effect">
+        <CardContent className="p-8 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="glass-effect">
+        <CardContent className="p-8 text-center">
+          <p className="text-red-400">{error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+    <Card className="glass-effect">
+      <CardHeader>
+        <CardTitle className="text-foreground">Problems (Grouped issues)</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4 flex items-center gap-2">
+          <input
+            value={areaFilter}
+            onChange={(e) => setAreaFilter(e.target.value)}
+            placeholder="Filter by place/address keyword"
+            className="w-full md:w-80 px-3 py-2 rounded-md bg-white/10 border border-white/20 text-white placeholder:text-white/60"
+          />
+        </div>
+        {problems.length === 0 ? (
+          <div className="text-center py-8 text-white/80">No problems yet.</div>
+        ) : (
+          <div className="space-y-4">
+            {problems.map((p) => (
+              <div key={p.id} className="p-4 rounded-lg border border-border/50 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Badge className={`${
+                      p.status === 'resolved' ? 'bg-green-100 text-green-800 border-green-200' :
+                      p.status === 'disputed' ? 'bg-red-100 text-red-800 border-red-200' :
+                      p.status === 'public_verification' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                      'bg-white/10 border-white/20'
+                    }`}>{p.status}</Badge>
+                    <span className="text-foreground font-semibold">{p.reports_count} reports</span>
+                  </div>
+                  <ProblemPreview problemId={p.id} centroid={{ lat: Number(p.centroid_lat), lng: Number(p.centroid_lng) }} areaFilter={areaFilter} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => openDetails(p)}
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={claiming === p.id || p.status === 'public_verification'}
+                    onClick={() => claimResolved(p.id)}
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    {claiming === p.id ? 'Claiming…' : 'Claim Resolved'}
+                  </Button>
+                  {p.status !== 'open' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/problems', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reopen', problem_id: p.id }) })
+                          if (!res.ok) throw new Error('Failed to reopen')
+                          await fetchProblems()
+                        } catch {}
+                      }}
+                    >
+                      Unmark / Reopen
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+    {/* Details modal */}
+    <ProblemDetails open={detailsOpen} onClose={() => setDetailsOpen(false)} problem={selected} details={details} />
+    </>
+  );
+}
+
+// Simple details modal
+function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="relative max-w-4xl w-full glass-effect rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-foreground text-lg font-semibold">{title}</h3>
+          <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={onClose}>Close</Button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Attach details modal rendering
+function ProblemDetails({ open, onClose, problem, details }: { open: boolean; onClose: () => void; problem: MinimalProblem | null; details: { reports: any[] } | null }) {
+  return (
+    <Modal open={open} onClose={onClose} title={problem ? `Problem (${problem.reports_count} reports)` : 'Problem'}>
+      {!details || !details.reports || details.reports.length === 0 ? (
+        <div className="text-white/80">No reports found for this problem.</div>
+      ) : (
+        <div className="space-y-3 max-h-[70vh] overflow-auto">
+          {details.reports.map((r) => (
+            <div key={r.id} className="p-3 rounded-lg border border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="text-foreground font-semibold">{r.title}</div>
+                <div className="text-xs text-white/70">{r.issue_category?.type || 'Unknown'}</div>
+              </div>
+              <div className="text-sm text-white/80 mt-1">{r.user?.full_name} · {r.user?.email}</div>
+              <div className="text-sm text-white/70 mt-1">{r.address}</div>
+              {Array.isArray(r.images) && r.images.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {r.images.map((img: string, i: number) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={img} alt="evidence" className="w-full h-24 object-cover rounded" />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// Inline preview component to show title/address/issue type from the first report
+function ProblemPreview({ problemId, centroid, areaFilter }: { problemId: string; centroid: { lat: number; lng: number }; areaFilter: string }) {
+  const [meta, setMeta] = React.useState<{ title?: string; address?: string; issue?: string } | null>(null)
+
+  React.useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await fetch(`/api/problems/${problemId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const first = Array.isArray(data.reports) && data.reports.length > 0 ? data.reports[0] : null
+        if (!cancelled) setMeta(first ? { title: first.title, address: first.address, issue: first.issue_category?.type } : {})
+      } catch {}
+    }
+    run()
+    return () => { cancelled = true }
+  }, [problemId])
+
+  const addressMatches = areaFilter.trim().length === 0 || (meta?.address || '').toLowerCase().includes(areaFilter.trim().toLowerCase())
+  if (!addressMatches) return null
+
+  return (
+    <div className="text-sm text-white/70 mt-1">
+      Lat {centroid.lat.toFixed(5)}, Lng {centroid.lng.toFixed(5)} · Radius 35m
+      {meta?.issue && <div className="mt-1">Issue: <span className="text-white/90">{meta.issue}</span></div>}
+      {meta?.title && <div className="mt-0.5">Title: <span className="text-white/90">{meta.title}</span></div>}
+      {meta?.address && <div className="mt-0.5">Address: <span className="text-white/90">{meta.address}</span></div>}
+    </div>
+  )
+}

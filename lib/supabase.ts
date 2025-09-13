@@ -112,6 +112,55 @@ export interface Notification {
   created_at: string
 }
 
+// Problems feature
+export interface Problem {
+  id: string
+  issue_category_id: string
+  centroid_lat: number
+  centroid_lng: number
+  radius_m: number
+  status: 'open' | 'in_progress' | 'claimed_resolved' | 'public_verification' | 'resolved' | 'disputed'
+  reports_count: number
+  report_ids: string[]
+  created_at: string
+  updated_at: string
+}
+
+export type ProblemVoteType = 'agree' | 'disagree'
+
+export interface ProblemVote {
+  id: string
+  problem_id: string
+  user_id: string
+  vote: ProblemVoteType
+  reason?: string
+  created_at: string
+}
+
+export function calculateDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const R = 6371000
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+export function recomputeCentroid(
+  points: Array<{ lat: number; lng: number }>
+): { lat: number; lng: number } {
+  if (points.length === 0) return { lat: 0, lng: 0 }
+  const sum = points.reduce((acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }), { lat: 0, lng: 0 })
+  return { lat: sum.lat / points.length, lng: sum.lng / points.length }
+}
+
 // Utility functions
 export const getVerificationColor = (status: string): string => {
   const colors = {

@@ -19,17 +19,59 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/use-user";
 import { Report } from "@/lib/supabase";
 import { Footer } from "@/components/Footer";
+import { Bell } from "lucide-react";
 
 const UserDashboard = () => {
   const router = useRouter();
   const { user, loading: userLoading, isAdmin } = useUser();
   const [reports, setReports] = useState<Report[]>([]);
+  type UINotification = {
+    id: string;
+    is_read: boolean;
+    title: string;
+    message: string;
+    related_problem_id?: string;
+  };
+  const [notifications, setNotifications] = useState<UINotification[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchUserReports();
     }
   }, [user]);
+
+  // Refresh reports when notifications change (in case status was updated)
+  useEffect(() => {
+    if (notifications.length > 0) {
+      fetchUserReports();
+    }
+  }, [notifications]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (!res.ok) return;
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      } catch {}
+    };
+    fetchNotifications();
+  }, [user]);
+
+  useEffect(() => {
+    if (notifOpen) {
+      (async () => {
+        try {
+          const res = await fetch('/api/notifications');
+          if (!res.ok) return;
+          const data = await res.json();
+          setNotifications(data.notifications || []);
+        } catch {}
+      })();
+    }
+  }, [notifOpen]);
 
   const fetchUserReports = async () => {
     try {
@@ -38,6 +80,7 @@ const UserDashboard = () => {
       
       const data = await response.json();
       setReports(data.reports || []);
+      console.log('Reports fetched:', data.reports?.map(r => ({ id: r.id, status: r.verification_status, title: r.title })));
     } catch (err) {
       console.error('Error fetching reports:', err);
     }
@@ -85,6 +128,7 @@ const UserDashboard = () => {
     totalReports: reports.length,
     verifiedReports: reports.filter(r => r.verification_status === 'verified').length,
     pendingReports: reports.filter(r => r.verification_status === 'pending').length,
+    resolvedReports: reports.filter(r => r.verification_status === 'resolved').length,
     honorPoints: user?.honor_score_points || 0
   };
 
@@ -125,17 +169,101 @@ const UserDashboard = () => {
       <div className="floating-blob"></div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-6">
-        <div className="flex items-center">
+      <header className="relative z-50 flex items-center justify-between p-6">
+        <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold hero-text">Welcome back, {user.full_name || 'User'}!</h1>
+          <Button
+            onClick={fetchUserReports}
+            size="sm"
+            variant="outline"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            Refresh
+          </Button>
         </div>
-        <Button 
-          onClick={() => router.push("/profile")}
-          className="bg-gradient-primary hover:opacity-90 text-primary-foreground"
-        >
-          <User className="h-4 w-4 mr-2" />
-          View Profile
-        </Button>
+        <div className="flex items-center gap-2 relative">
+          <button
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="relative p-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5 text-white" />
+            {notifications.some(n => !n.is_read) && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
+            )}
+          </button>
+          <Button 
+            onClick={() => router.push("/profile")}
+            className="bg-gradient-primary hover:opacity-90 text-primary-foreground"
+          >
+            <User className="h-4 w-4 mr-2" />
+            View Profile
+          </Button>
+          {notifOpen && (
+            <div className="fixed right-6 top-16 w-80 max-h-96 overflow-auto glass-effect rounded-xl p-2" style={{ zIndex: 99999 }}>
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-sm text-white/80">Notifications</span>
+                <button
+                  className="text-xs text-white/60 hover:text-white"
+                  onClick={async () => {
+                    await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mark: 'read_all' }) });
+                    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                  }}
+                >
+                  Mark all read
+                </button>
+              </div>
+              <div className="divide-y divide-white/10">
+                {notifications.length === 0 && (
+                  <div className="p-4 text-sm text-white/70">No notifications</div>
+                )}
+                {notifications.map((n) => (
+                  <div key={n.id} className="p-3 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium text-white">{n.title}</div>
+                        <div className="text-white/80 mt-0.5">{n.message}</div>
+                        {n.related_problem_id && (
+                          <div className="mt-2 flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              onClick={async () => {
+                                const res = await fetch('/api/problems/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem_id: n.related_problem_id, vote: 'agree' }) });
+                                const data = await res.json();
+                                await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mark: 'read_one', id: n.id }) });
+                                setNotifications(prev => prev.filter(x => x.id !== n.id));
+                                alert(data.status ? `Thanks! Current status: ${data.status}` : 'Vote recorded.');
+                              }}
+                            >
+                              I agree
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              onClick={async () => {
+                                const res = await fetch('/api/problems/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem_id: n.related_problem_id, vote: 'disagree' }) });
+                                const data = await res.json();
+                                await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mark: 'read_one', id: n.id }) });
+                                setNotifications(prev => prev.filter(x => x.id !== n.id));
+                                alert(data.status ? `Thanks! Current status: ${data.status}` : 'Vote recorded.');
+                              }}
+                            >
+                              Not resolved
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      {!n.is_read && <span className="mt-1 w-2 h-2 bg-blue-400 rounded-full" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
