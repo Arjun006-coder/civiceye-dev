@@ -106,6 +106,9 @@ export default function TestAIPage() {
 
         if (nsfwResult.ok) {
           nsfwResults.push(await nsfwResult.json());
+        } else {
+          console.error('NSFW check failed:', nsfwResult.status, nsfwResult.statusText);
+          nsfwResults.push({ error: `NSFW check failed: ${nsfwResult.status}` });
         }
 
         // Issue Classification
@@ -119,6 +122,9 @@ export default function TestAIPage() {
 
         if (classifyResult.ok) {
           classificationResults.push(await classifyResult.json());
+        } else {
+          console.error('Issue classification failed:', classifyResult.status, classifyResult.statusText);
+          classificationResults.push({ error: `Classification failed: ${classifyResult.status}` });
         }
       }
 
