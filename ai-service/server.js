@@ -117,4 +117,8 @@ app.post("/issue-classify", upload.single("image"), async (req, res) => {
 
 // ========== SERVER START ==========
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`AI service running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`AI service running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`HuggingFace API Key configured: ${process.env.HF_API_KEY ? 'Yes' : 'No'}`);
+});
